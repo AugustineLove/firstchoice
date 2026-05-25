@@ -1,0 +1,427 @@
+'use client';
+import { useState } from 'react';
+import { useTheme } from '../../context/ThemeContext';
+import Navbar from '../../components/Navbar';
+
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+
+const TEAM = [
+  {
+    initials: 'KA',
+    name: 'Kweku Stephens',
+    role: 'Co-Founder & CEO',
+    bio: 'Logistics entrepreneur with 8 years building supply chains across Ghana. Grew up in Agona Nkwanta and came back to solve the town\'s commerce gap.',
+    tags: ['Strategy', 'Operations', 'Partnerships'],
+    colorKey: 'green',
+    social: { twitter: '#', linkedin: '#' },
+  },
+  {
+    initials: 'AS',
+    name: 'Abena Sarpong',
+    role: 'Co-Founder & COO',
+    bio: 'Former operations lead at a Accra-based e-commerce startup. Obsessed with last-mile delivery and community-first business models.',
+    tags: ['Operations', 'Rider Network', 'Quality'],
+    colorKey: 'greenMid',
+    social: { twitter: '#', linkedin: '#' },
+  },
+  {
+    initials: 'YM',
+    name: 'Yaw Mensah',
+    role: 'Head of Technology',
+    bio: 'Full-stack engineer and mobile developer. Built the entire FirstChoice platform from scratch. Passionate about technology serving local economies.',
+    tags: ['React Native', 'Node.js', 'Systems'],
+    colorKey: 'amber',
+    social: { twitter: '#', linkedin: '#', github: '#' },
+  },
+  {
+    initials: 'EA',
+    name: 'Efua Asante',
+    role: 'Head of Vendor Growth',
+    bio: 'Former regional sales manager who has onboarded over 50 local businesses onto the platform. Knows every vendor in Agona Nkwanta by name.',
+    tags: ['Vendor Relations', 'Sales', 'Growth'],
+    colorKey: 'greenLight',
+    social: { linkedin: '#' },
+  },
+  {
+    initials: 'KO',
+    name: 'Kwabena Osei',
+    role: 'Rider Operations Lead',
+    bio: 'Started as a rider himself before taking on operations. Manages the entire dispatch network and rider onboarding program across zones.',
+    tags: ['Dispatch', 'Training', 'Fleet'],
+    colorKey: 'greenMid',
+    social: { linkedin: '#' },
+  },
+  {
+    initials: 'AK',
+    name: 'Afia Kusi',
+    role: 'Design & Brand',
+    bio: 'Visual designer and UX strategist. Responsible for every pixel of the FirstChoice experience — from the app to the riders\' uniforms.',
+    tags: ['UI/UX', 'Brand', 'Motion'],
+    colorKey: 'amber',
+    social: { twitter: '#', linkedin: '#' },
+  },
+];
+
+const VALUES = [
+  {
+    icon: '🌍',
+    title: 'Community First',
+    desc: 'Every decision starts with what is best for the communities we serve. We\'re not building for investors — we\'re building for Agona Nkwanta.',
+  },
+  {
+    icon: '⚡',
+    title: 'Speed & Reliability',
+    desc: 'We measure ourselves on minutes, not hours. A delivery promise is sacred — and we build systems that keep it.',
+  },
+  {
+    icon: '🤝',
+    title: 'Fair for Everyone',
+    desc: 'Riders earn fairly. Vendors grow profitably. Customers get honest prices. No winner takes all — the whole ecosystem thrives together.',
+  },
+  {
+    icon: '🔍',
+    title: 'Radical Transparency',
+    desc: 'No hidden fees, no surprise charges. We tell vendors exactly what they pay, and riders exactly what they earn.',
+  },
+];
+
+const TIMELINE = [
+  { year: 'Jan 2024', label: 'Idea Born', desc: 'Kofi and Abena sketch FirstChoice on a notebook at a chop bar in Agona Nkwanta.' },
+  { year: 'Mar 2024', label: 'First Rider', desc: '3 riders. 12 orders in week one. Delivered every single one on time.' },
+  { year: 'Jun 2024', label: 'Platform Launch', desc: 'Yaw ships the full app. Vendors start getting digital orders for the first time.' },
+  { year: 'Sep 2024', label: '50+ Vendors', desc: 'Half the town\'s businesses are now on FirstChoice. 200+ deliveries completed.' },
+  { year: '2025', label: 'Expansion', desc: 'Adjacent towns. Smarter dispatch. Inter-town delivery routes go live.' },
+];
+
+// ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
+
+function SectionHeader({ label, title, sub, center = true, theme }) {
+  return (
+    <div style={{ textAlign: center ? 'center' : 'left', marginBottom: 52 }}>
+      <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: theme.green, marginBottom: 10 }}>
+        {label}
+      </p>
+      <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: theme.dark, lineHeight: 1.1, marginBottom: 14 }}>
+        {title}
+      </h2>
+      {sub && (
+        <p style={{ fontSize: 16, color: theme.muted, lineHeight: 1.75, maxWidth: 560, margin: center ? '0 auto' : 0 }}>
+          {sub}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function TeamCard({ member, theme }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#fff',
+        border: `1.5px solid ${hovered ? theme.greenLight : theme.border}`,
+        borderRadius: 20,
+        padding: '32px 28px',
+        transition: 'all 0.3s',
+        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
+        boxShadow: hovered ? `0 16px 40px rgba(0,0,0,0.09)` : '0 2px 8px rgba(0,0,0,0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0,
+      }}
+    >
+      {/* Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
+        <div style={{
+          width: 62, height: 62, borderRadius: '50%',
+          background: theme[member.colorKey],
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 20, fontWeight: 800, color: '#fff',
+          flexShrink: 0,
+          boxShadow: `0 4px 14px ${theme[member.colorKey]}55`,
+        }}>
+          {member.initials}
+        </div>
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: theme.dark }}>{member.name}</div>
+          <div style={{ fontSize: 13, color: theme.green, fontWeight: 600, marginTop: 2 }}>{member.role}</div>
+        </div>
+      </div>
+
+      {/* Bio */}
+      <p style={{ fontSize: 14, color: theme.muted, lineHeight: 1.75, marginBottom: 18, flexGrow: 1 }}>
+        {member.bio}
+      </p>
+
+      {/* Tags */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+        {member.tags.map((tag) => (
+          <span key={tag} style={{
+            fontSize: 11, fontWeight: 700, padding: '4px 10px',
+            background: theme.greenPale, color: theme.green, borderRadius: 50,
+          }}>
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {/* Social */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {member.social.linkedin && (
+          <a href={member.social.linkedin} style={socialIconStyle(theme)}>in</a>
+        )}
+        {member.social.twitter && (
+          <a href={member.social.twitter} style={socialIconStyle(theme)}>𝕏</a>
+        )}
+        {member.social.github && (
+          <a href={member.social.github} style={socialIconStyle(theme)}>⌥</a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function socialIconStyle(theme) {
+  return {
+    width: 30, height: 30, borderRadius: 8,
+    background: theme.greenPale, color: theme.green,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 12, fontWeight: 700, textDecoration: 'none',
+    transition: 'all 0.2s',
+  };
+}
+
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
+
+export default function TeamPage() {
+  const { theme } = useTheme();
+
+  return (
+    <>
+      <Navbar />
+    <div style={{ background: '#fff', paddingTop: 66 }}>
+
+      {/* ── HERO ── */}
+      <section style={{ padding: '80px 5% 72px', background: theme.greenXpale, position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative circle */}
+        <div style={{
+          position: 'absolute', width: 500, height: 500, borderRadius: '50%',
+          background: theme.green, opacity: 0.04,
+          right: -150, top: -150, pointerEvents: 'none',
+        }} />
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }} className="about-hero-grid">
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px',
+              background: theme.greenPale, border: `1px solid ${theme.greenLight}`,
+              borderRadius: 50, fontSize: 13, color: theme.green, fontWeight: 600, marginBottom: 22,
+            }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: theme.greenLight, display: 'inline-block' }} />
+              Our Story
+            </div>
+            <h1 style={{ fontSize: 'clamp(34px,5vw,56px)', fontWeight: 900, lineHeight: 1.08, color: theme.dark, marginBottom: 22 }}>
+              We're the team<br />
+              <em style={{ fontStyle: 'normal', color: theme.green }}>rethinking local</em><br />
+              commerce in Ghana.
+            </h1>
+            <p style={{ fontSize: 17, color: theme.muted, lineHeight: 1.8, maxWidth: 480 }}>
+              FirstChoice started as a napkin sketch at a chop bar in Agona Nkwanta. Today it's a growing team of builders, riders, and community operators on a mission to bring world-class logistics to every town in Ghana.
+            </p>
+          </div>
+
+          {/* Stats block */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {[
+              { num: '6', label: 'Core Team', sub: 'Builders & operators' },
+              { num: '50+', label: 'Vendors', sub: 'On the platform' },
+              { num: '15+', label: 'Active Riders', sub: 'Across all zones' },
+              { num: '2024', label: 'Founded', sub: 'Agona Nkwanta, GH' },
+            ].map((s) => (
+              <div key={s.label} style={{
+                background: '#fff', border: `1px solid ${theme.border}`,
+                borderRadius: 16, padding: '24px 22px',
+                transition: 'box-shadow 0.2s',
+              }}>
+                <div style={{ fontSize: 34, fontWeight: 900, color: theme.green, lineHeight: 1 }}>{s.num}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: theme.dark, marginTop: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: theme.muted, marginTop: 3 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <style>{`@media(max-width:768px){.about-hero-grid{grid-template-columns:1fr!important}}`}</style>
+      </section>
+
+      {/* ── ORIGIN STORY ── */}
+      <section style={{ padding: '80px 5%', background: '#fff' }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: theme.green, marginBottom: 14 }}>
+            The Origin
+          </p>
+          <blockquote style={{
+            fontSize: 'clamp(18px,2.5vw,24px)', fontWeight: 600, color: theme.dark,
+            lineHeight: 1.65, borderLeft: 'none', margin: 0,
+            padding: '0 0 28px',
+          }}>
+            "I watched my mother run her store for years — keeping a notebook of customers who called in orders, then manually sending someone to deliver. There had to be a better way. That notebook became FirstChoice."
+          </blockquote>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: '50%', background: theme.green,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 15, fontWeight: 800,
+            }}>
+              KA
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 700, color: theme.dark, fontSize: 14 }}>Kweku Stephens</div>
+              <div style={{ fontSize: 12, color: theme.muted }}>Co-Founder & CEO, FirstChoice</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TIMELINE ── */}
+      <section style={{ padding: '80px 5%', background: theme.greenXpale }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <SectionHeader
+            label="Our Journey"
+            title={<>From Notebook to <em style={{ fontStyle: 'normal', color: theme.green }}>Platform</em></>}
+            sub="The milestones that got us here."
+            theme={theme}
+          />
+          <div style={{ position: 'relative', maxWidth: 820, margin: '0 auto' }}>
+            {/* Vertical line */}
+            <div style={{
+              position: 'absolute', left: 28, top: 0, bottom: 0, width: 2,
+              background: `linear-gradient(180deg, ${theme.greenLight}, ${theme.amberLight})`,
+              borderRadius: 2,
+            }} />
+            {TIMELINE.map((item, i) => (
+              <div key={i} style={{ display: 'flex', gap: 28, marginBottom: 36, position: 'relative' }}>
+                {/* Dot */}
+                <div style={{
+                  width: 58, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: i === TIMELINE.length - 1 ? theme.amberLight : theme.green,
+                    border: `3px solid #fff`,
+                    boxShadow: `0 0 0 3px ${theme.greenPale}`,
+                    marginTop: 4, zIndex: 1,
+                  }} />
+                </div>
+                {/* Content */}
+                <div style={{
+                  background: '#fff', borderRadius: 14, padding: '20px 24px',
+                  border: `1px solid ${theme.border}`, flex: 1,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '3px 10px',
+                      background: theme.greenPale, color: theme.green, borderRadius: 50,
+                    }}>
+                      {item.year}
+                    </span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: theme.dark }}>{item.label}</span>
+                  </div>
+                  <p style={{ fontSize: 14, color: theme.muted, lineHeight: 1.7, margin: 0 }}>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEAM ── */}
+      <section style={{ padding: '80px 5%', background: '#fff' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <SectionHeader
+            label="The Team"
+            title={<>Meet the <em style={{ fontStyle: 'normal', color: theme.green }}>Builders</em></>}
+            sub="Six people with one shared obsession: making local commerce work beautifully."
+            theme={theme}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22 }} className="team-grid">
+            {TEAM.map((member) => (
+              <TeamCard key={member.name} member={member} theme={theme} />
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @media(max-width:900px){.team-grid{grid-template-columns:repeat(2,1fr)!important}}
+          @media(max-width:580px){.team-grid{grid-template-columns:1fr!important}}
+        `}</style>
+      </section>
+
+      {/* ── VALUES ── */}
+      <section style={{ padding: '80px 5%', background: theme.greenXpale }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <SectionHeader
+            label="What We Stand For"
+            title={<>Our <em style={{ fontStyle: 'normal', color: theme.green }}>Core Values</em></>}
+            sub="Not just words on a wall — these are the operating principles every team member lives by."
+            theme={theme}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }} className="values-grid">
+            {VALUES.map((v) => (
+              <div
+                key={v.title}
+                style={{
+                  background: '#fff', border: `1px solid ${theme.border}`,
+                  borderRadius: 16, padding: '28px 22px',
+                  transition: 'transform 0.25s, box-shadow 0.25s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <div style={{ fontSize: 32, marginBottom: 16 }}>{v.icon}</div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: theme.dark, marginBottom: 10 }}>{v.title}</h3>
+                <p style={{ fontSize: 13, color: theme.muted, lineHeight: 1.75 }}>{v.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @media(max-width:900px){.values-grid{grid-template-columns:repeat(2,1fr)!important}}
+          @media(max-width:520px){.values-grid{grid-template-columns:1fr!important}}
+        `}</style>
+      </section>
+
+      {/* ── JOIN US CTA ── */}
+      <section style={{ padding: '80px 5%', background: theme.dark, textAlign: 'center' }}>
+        <div style={{ maxWidth: 660, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, color: '#fff', marginBottom: 14 }}>
+            Want to Join the <em style={{ fontStyle: 'normal', color: theme.greenLight }}>Team</em>?
+          </h2>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.62)', lineHeight: 1.75, marginBottom: 36 }}>
+            We're always looking for people who care deeply about local communities and want to build things that matter. Come ride with us.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <button style={{
+              padding: '14px 30px', background: theme.greenLight, color: '#fff',
+              border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700,
+              fontFamily: 'inherit', cursor: 'pointer',
+            }}>
+              View Open Roles →
+            </button>
+            <a href="/contact" style={{
+              padding: '14px 30px', background: 'none',
+              border: '1.5px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.85)',
+              borderRadius: 10, fontSize: 15, fontWeight: 600,
+              fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'none',
+              display: 'inline-block',
+            }}>
+              Get in Touch
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    </>
+  );
+}
