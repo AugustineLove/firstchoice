@@ -7,8 +7,8 @@ import Navbar from '../../components/Navbar';
 
 const TEAM = [
   {
-    initials: 'KA',
-    name: 'Kweku Stephens',
+    initials: 'AS',
+    name: 'Austin Stephens',
     role: 'Co-Founder & CEO',
     bio: 'Logistics entrepreneur with 8 years building supply chains across Ghana. Grew up in Agona Nkwanta and came back to solve the town\'s commerce gap.',
     tags: ['Strategy', 'Operations', 'Partnerships'],
@@ -16,8 +16,8 @@ const TEAM = [
     social: { twitter: '#', linkedin: '#' },
   },
   {
-    initials: 'AS',
-    name: 'Abena Sarpong',
+    initials: 'CN',
+    name: 'Collin Narh',
     role: 'Co-Founder & COO',
     bio: 'Former operations lead at a Accra-based e-commerce startup. Obsessed with last-mile delivery and community-first business models.',
     tags: ['Operations', 'Rider Network', 'Quality'],
@@ -25,8 +25,8 @@ const TEAM = [
     social: { twitter: '#', linkedin: '#' },
   },
   {
-    initials: 'YM',
-    name: 'Yaw Mensah',
+    initials: 'AL',
+    name: 'Augustine Love',
     role: 'Head of Technology',
     bio: 'Full-stack engineer and mobile developer. Built the entire FirstChoice platform from scratch. Passionate about technology serving local economies.',
     tags: ['React Native', 'Node.js', 'Systems'],
@@ -51,35 +51,35 @@ const TEAM = [
     colorKey: 'greenMid',
     social: { linkedin: '#' },
   },
-  {
-    initials: 'AK',
-    name: 'Afia Kusi',
-    role: 'Design & Brand',
-    bio: 'Visual designer and UX strategist. Responsible for every pixel of the FirstChoice experience — from the app to the riders\' uniforms.',
-    tags: ['UI/UX', 'Brand', 'Motion'],
-    colorKey: 'amber',
-    social: { twitter: '#', linkedin: '#' },
-  },
+  // {
+  //   initials: 'AK',
+  //   name: 'Afia Kusi',
+  //   role: 'Design & Brand',
+  //   bio: 'Visual designer and UX strategist. Responsible for every pixel of the FirstChoice experience — from the app to the riders\' uniforms.',
+  //   tags: ['UI/UX', 'Brand', 'Motion'],
+  //   colorKey: 'amber',
+  //   social: { twitter: '#', linkedin: '#' },
+  // },
 ];
 
 const VALUES = [
   {
-    icon: '🌍',
+    icon: '',
     title: 'Community First',
     desc: 'Every decision starts with what is best for the communities we serve. We\'re not building for investors — we\'re building for Agona Nkwanta.',
   },
   {
-    icon: '⚡',
+    icon: '',
     title: 'Speed & Reliability',
     desc: 'We measure ourselves on minutes, not hours. A delivery promise is sacred — and we build systems that keep it.',
   },
   {
-    icon: '🤝',
+    icon: '',
     title: 'Fair for Everyone',
     desc: 'Riders earn fairly. Vendors grow profitably. Customers get honest prices. No winner takes all — the whole ecosystem thrives together.',
   },
   {
-    icon: '🔍',
+    icon: '',
     title: 'Radical Transparency',
     desc: 'No hidden fees, no surprise charges. We tell vendors exactly what they pay, and riders exactly what they earn.',
   },
@@ -363,7 +363,7 @@ export default function TeamPage() {
           <SectionHeader
             label="What We Stand For"
             title={<>Our <em style={{ fontStyle: 'normal', color: theme.green }}>Core Values</em></>}
-            sub="Not just words on a wall — these are the operating principles every team member lives by."
+            sub="Not just words on a wall these are the operating principles every team member lives by."
             theme={theme}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }} className="values-grid">
