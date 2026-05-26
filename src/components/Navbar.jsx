@@ -1,223 +1,420 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { themes, useTheme } from '../context/ThemeContext';
+
 const NAV_LINKS = [
   { label: 'How it Works', href: '#how' },
   { label: 'Services', href: '#services' },
   { label: 'Partners', href: '#partners' },
-  // { label: 'Pricing', href: '#pricing' },
   { label: 'About', href: '#about' },
-  // {label: 'Team', href: '/team'}
 ];
-
-
-const scrollTo = (href) => {
-  const el = document.querySelector(href);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
-};
-
-
 
 export default function Navbar() {
   const navigate = useNavigate();
-
-  const handleNavClick = (href) => {
-  if (!href.startsWith('#')) {
-    navigate(href);
-    return;
-  }
-
-  const target = document.querySelector(href);
-
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth' });
-  } else {
-    navigate('/');
-
-    setTimeout(() => {
-      const el = document.querySelector(href);
-      el?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  }
-};
-
   const { theme, themeName, setTheme } = useTheme();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  /* =========================
+     SCROLL EFFECT
+  ========================= */
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handler);
-    return () => window.removeEventListener('scroll', handler);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 15);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNav = (href) => {
+  /* =========================
+     NAVIGATION
+  ========================= */
+  const handleNavClick = (href) => {
     setMobileOpen(false);
-    scrollTo(href);
+
+    // ROUTES
+    if (!href.startsWith('#')) {
+      navigate(href);
+      return;
+    }
+
+    // SAME PAGE SCROLL
+    const target = document.querySelector(href);
+
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+      });
+    } else {
+      // IF SECTION NOT FOUND
+      navigate(`/${href}`);
+
+      setTimeout(() => {
+        document.querySelector(href)?.scrollIntoView({
+          behavior: 'smooth',
+        });
+      }, 120);
+    }
   };
 
   return (
     <>
+      {/* =========================
+          NAVBAR
+      ========================= */}
       <nav
         style={{
           position: 'fixed',
-          top: 0, left: 0, right: 0,
-          zIndex: 100,
-          height: 66,
-          background: scrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: `1px solid ${theme.border}`,
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          height: 72,
           display: 'flex',
           alignItems: 'center',
-          padding: '0 5%',
-          transition: 'all 0.3s',
-          boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.06)' : 'none',
+          transition: 'all 0.3s ease',
+          backdropFilter: 'blur(18px)',
+          background: scrolled
+            ? 'rgba(255,255,255,0.82)'
+            : 'rgba(255,255,255,0.65)',
+          borderBottom: `1px solid ${theme.border}`,
+          // boxShadow: scrolled
+          //   ? '0 8px 30px rgba(0,0,0,0.06)'
+          //   : 'none',
         }}
       >
-        <div style={{ maxWidth: 1100, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Logo */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 38, height: 38, background: theme.green, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 18 }}>F</div>
-            <span style={{ fontWeight: 700, fontSize: 18, color: theme.dark }}>
-              First<span style={{ color: theme.greenLight }}>Choice</span>
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          {/* =========================
+              LOGO
+          ========================= */}
+          <Link
+            to="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              textDecoration: 'none',
+            }}
+          >
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: theme.green,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: 18,
+                // boxShadow: `0 8px 20px ${theme.green}40`,
+              }}
+            >
+              F
+            </div>
+
+            <span
+              style={{
+                fontSize: 19,
+                fontWeight: 800,
+                color: theme.dark,
+              }}
+            >
+              First
+              <span style={{ color: theme.greenLight }}>
+                Choice
+              </span>
             </span>
           </Link>
 
-          {/* Desktop Links */}
-          <ul style={{ display: 'flex', gap: 28, listStyle: 'none', margin: 0, padding: 0 }} className="nav-links-desktop">
-            {NAV_LINKS.map((l) => (
-              <li key={l.label}>
+          {/* =========================
+              DESKTOP LINKS
+          ========================= */}
+          <ul className="desktop-links">
+            {NAV_LINKS.map((item) => (
+              <li key={item.label}>
                 <button
-                  onClick={() => handleNavClick(l.href)}
+                  onClick={() => handleNavClick(item.href)}
+                  className="nav-link"
                   style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: 14, color: theme.muted, fontFamily: 'inherit',
-                    padding: 0, fontWeight: 500, transition: 'color 0.2s',
+                    color: theme.muted,
                   }}
-                  onMouseEnter={(e) => (e.target.style.color = theme.green)}
-                  onMouseLeave={(e) => (e.target.style.color = theme.muted)}
                 >
-                  {l.label}
+                  {item.label}
                 </button>
               </li>
             ))}
           </ul>
 
-          {/* Right: Theme + CTA */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Theme Switcher */}
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {/* =========================
+              RIGHT ACTIONS
+          ========================= */}
+          <div className="desktop-actions">
+            {/* THEME SWITCHER */}
+            <div className="theme-switcher">
               {Object.keys(themes).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
-                  title={t}
                   style={{
-                    width: 22, height: 22, borderRadius: '50%',
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    border:
+                      themeName === t
+                        ? `2px solid ${theme.dark}`
+                        : '2px solid transparent',
                     background: themes[t].green,
-                    border: themeName === t ? `2.5px solid ${theme.dark}` : '2.5px solid transparent',
                     cursor: 'pointer',
-                    transform: themeName === t ? 'scale(1.15)' : 'scale(1)',
-                    transition: 'all 0.2s',
-                    padding: 0,
+                    transition: 'all 0.2s ease',
+                    transform:
+                      themeName === t
+                        ? 'scale(1.15)'
+                        : 'scale(1)',
                   }}
                 />
               ))}
             </div>
 
+            {/* LOGIN */}
             <button
               onClick={() => navigate('/admin')}
-              style={{
-                padding: '8px 18px', borderRadius: 8,
-                border: `1.5px solid ${theme.green}`,
-                background: 'none', color: theme.green,
-                cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                fontFamily: 'inherit', transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = theme.greenPale)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              className="login-btn"
             >
               Login
             </button>
-            <button
-              style={{
-                padding: '9px 20px', borderRadius: 8, border: 'none',
-                background: theme.green, color: '#fff',
-                cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                fontFamily: 'inherit', transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = theme.greenMid)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = theme.green)}
-            >
+
+            {/* CTA */}
+            <button className="cta-btn">
               Get Started
             </button>
-
-            {/* Mobile Toggle */}
-            <button
-              onClick={() => setMobileOpen((v) => !v)}
-              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: theme.dark, padding: 4 }}
-              className="mobile-toggle"
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
+
+          {/* =========================
+              MOBILE TOGGLE
+          ========================= */}
+          <button
+            className="mobile-toggle"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? (
+              <X size={26} />
+            ) : (
+              <Menu size={26} />
+            )}
+          </button>
         </div>
       </nav>
 
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 99, background: '#fff',
-            paddingTop: 66, display: 'flex', flexDirection: 'column',
-            padding: '80px 24px 24px', gap: 4,
-          }}
-        >
-          {NAV_LINKS.map((l) => (
+      {/* =========================
+          MOBILE MENU
+      ========================= */}
+      <div
+        className={`mobile-menu ${
+          mobileOpen ? 'open' : ''
+        }`}
+      >
+        <div className="mobile-menu-content">
+          {NAV_LINKS.map((item) => (
             <button
-              key={l.label}
-              onClick={() => handleNav(l.href)}
-              style={{
-                textAlign: 'left', fontSize: 18, fontWeight: 600,
-                color: theme.dark, background: 'none', border: 'none',
-                borderBottom: `1px solid ${theme.border}`, cursor: 'pointer',
-                padding: '14px 0', fontFamily: 'inherit',
-              }}
+              key={item.label}
+              onClick={() =>
+                handleNavClick(item.href)
+              }
+              className="mobile-link"
             >
-              {l.label}
+              {item.label}
             </button>
           ))}
+
           <button
-            style={{
-              marginTop: 16, padding: '12px', border: `1.5px solid ${theme.green}`,
-              borderRadius: 8, background: 'none', color: theme.green,
-              fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
+            className="mobile-login"
+            onClick={() => {
+              setMobileOpen(false);
+              navigate('/admin');
             }}
-            onClick={() => { setMobileOpen(false); navigate('/admin'); }}
           >
             Login
           </button>
-          <button
-            style={{
-              marginTop: 10, padding: '12px', border: 'none',
-              borderRadius: 8, background: theme.green, color: '#fff',
-              fontSize: 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
-            }}
-            onClick={() => setMobileOpen(false)}
-          >
+
+          <button className="mobile-cta">
             Get Started
           </button>
         </div>
-      )}
+      </div>
 
+      {/* =========================
+          STYLES
+      ========================= */}
       <style>{`
-        @media (max-width: 768px) {
-          .nav-links-desktop { display: none !important; }
-          .mobile-toggle { display: flex !important; }
+        .desktop-links {
+          display: flex;
+          align-items: center;
+          gap: 28px;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .nav-link {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 600;
+          transition: 0.25s ease;
+          font-family: inherit;
+        }
+
+        .nav-link:hover {
+          color: ${theme.green};
+          transform: translateY(-1px);
+        }
+
+        .desktop-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .theme-switcher {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-right: 6px;
+        }
+
+        .login-btn {
+          height: 42px;
+          padding: 0 18px;
+          border-radius: 10px;
+          border: 1.5px solid ${theme.green};
+          background: transparent;
+          color: ${theme.green};
+          font-weight: 600;
+          cursor: pointer;
+          transition: 0.25s ease;
+        }
+
+        .login-btn:hover {
+          background: ${theme.greenPale};
+        }
+
+        .cta-btn {
+          height: 42px;
+          padding: 0 20px;
+          border: none;
+          border-radius: 10px;
+          background: ${theme.green};
+          color: white;
+          font-weight: 700;
+          cursor: pointer;
+          transition: 0.25s ease;
+        }
+
+        .cta-btn:hover {
+          transform: translateY(-2px);
+          background: ${theme.greenMid};
+        }
+
+        .mobile-toggle {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: ${theme.dark};
+        }
+
+        .mobile-menu {
+          position: fixed;
+          inset: 0;
+          z-index: 999;
+          background: rgba(255,255,255,0.96);
+          backdrop-filter: blur(18px);
+          transform: translateY(-100%);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.35s ease;
+        }
+
+        .mobile-menu.open {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .mobile-menu-content {
+          padding: 100px 24px 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .mobile-link {
+          background: none;
+          border: none;
+          text-align: left;
+          padding: 16px 0;
+          font-size: 20px;
+          font-weight: 700;
+          border-bottom: 1px solid ${theme.border};
+          color: ${theme.dark};
+          cursor: pointer;
+        }
+
+        .mobile-login,
+        .mobile-cta {
+          margin-top: 14px;
+          height: 50px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+        }
+
+        .mobile-login {
+          border: 1.5px solid ${theme.green};
+          background: transparent;
+          color: ${theme.green};
+        }
+
+        .mobile-cta {
+          border: none;
+          background: ${theme.green};
+          color: white;
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+        @media (max-width: 900px) {
+          .desktop-links,
+          .desktop-actions {
+            display: none;
+          }
+
+          .mobile-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
         }
       `}</style>
     </>
