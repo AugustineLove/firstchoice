@@ -20,45 +20,52 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   /* =========================
-     SCROLL EFFECT
+      SCROLL EFFECT
   ========================= */
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 15);
+      setScrolled(window.scrollY > 10);
     };
 
     window.addEventListener('scroll', handleScroll);
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () =>
+      window.removeEventListener(
+        'scroll',
+        handleScroll
+      );
   }, []);
 
   /* =========================
-     NAVIGATION
+      NAVIGATION
   ========================= */
   const handleNavClick = (href) => {
     setMobileOpen(false);
 
-    // ROUTES
+    // ROUTE
     if (!href.startsWith('#')) {
       navigate(href);
       return;
     }
 
-    // SAME PAGE SCROLL
+    // SAME PAGE
     const target = document.querySelector(href);
 
     if (target) {
       target.scrollIntoView({
         behavior: 'smooth',
+        block: 'start',
       });
     } else {
-      // IF SECTION NOT FOUND
+      // GO HOME FIRST
       navigate(`/${href}`);
 
       setTimeout(() => {
-        document.querySelector(href)?.scrollIntoView({
-          behavior: 'smooth',
-        });
+        document
+          .querySelector(href)
+          ?.scrollIntoView({
+            behavior: 'smooth',
+          });
       }, 120);
     }
   };
@@ -75,73 +82,54 @@ export default function Navbar() {
           left: 0,
           right: 0,
           zIndex: 1000,
-          height: 72,
+          height: 78,
           display: 'flex',
           alignItems: 'center',
           transition: 'all 0.3s ease',
           backdropFilter: 'blur(18px)',
           background: scrolled
             ? 'rgba(255,255,255,0.82)'
-            : 'rgba(255,255,255,0.65)',
+            : 'rgba(255,255,255,0.55)',
           borderBottom: `1px solid ${theme.border}`,
-          // boxShadow: scrolled
-          //   ? '0 8px 30px rgba(0,0,0,0.06)'
-          //   : 'none',
+          boxShadow: scrolled
+            ? '0 10px 40px rgba(0,0,0,0.05)'
+            : 'none',
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div className="nav-container">
           {/* =========================
               LOGO
           ========================= */}
           <Link
             to="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              textDecoration: 'none',
-            }}
+            className="logo-wrapper"
           >
             <div
+              className="logo-icon"
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                background: theme.green,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 800,
-                fontSize: 18,
-                // boxShadow: `0 8px 20px ${theme.green}40`,
+                background: `linear-gradient(135deg, ${theme.green}, ${theme.greenMid})`,
               }}
             >
               F
             </div>
 
-            <span
-              style={{
-                fontSize: 19,
-                fontWeight: 800,
-                color: theme.dark,
-              }}
-            >
-              First
-              <span style={{ color: theme.greenLight }}>
+            <div className="logo-text">
+              <span
+                style={{
+                  color: theme.dark,
+                }}
+              >
+                First
+              </span>
+
+              <span
+                style={{
+                  color: theme.greenLight,
+                }}
+              >
                 Choice
               </span>
-            </span>
+            </div>
           </Link>
 
           {/* =========================
@@ -151,8 +139,10 @@ export default function Navbar() {
             {NAV_LINKS.map((item) => (
               <li key={item.label}>
                 <button
-                  onClick={() => handleNavClick(item.href)}
                   className="nav-link"
+                  onClick={() =>
+                    handleNavClick(item.href)
+                  }
                   style={{
                     color: theme.muted,
                   }}
@@ -164,7 +154,7 @@ export default function Navbar() {
           </ul>
 
           {/* =========================
-              RIGHT ACTIONS
+              DESKTOP ACTIONS
           ========================= */}
           <div className="desktop-actions">
             {/* THEME SWITCHER */}
@@ -173,21 +163,14 @@ export default function Navbar() {
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
+                  className="theme-dot"
                   style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    border:
+                    background:
+                      themes[t].green,
+                    outline:
                       themeName === t
                         ? `2px solid ${theme.dark}`
-                        : '2px solid transparent',
-                    background: themes[t].green,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    transform:
-                      themeName === t
-                        ? 'scale(1.15)'
-                        : 'scale(1)',
+                        : 'none',
                   }}
                 />
               ))}
@@ -195,8 +178,10 @@ export default function Navbar() {
 
             {/* LOGIN */}
             <button
-              onClick={() => navigate('/admin')}
               className="login-btn"
+              onClick={() =>
+                navigate('/admin')
+              }
             >
               Login
             </button>
@@ -212,7 +197,10 @@ export default function Navbar() {
           ========================= */}
           <button
             className="mobile-toggle"
-            onClick={() => setMobileOpen(!mobileOpen)}
+            onClick={() =>
+              setMobileOpen(!mobileOpen)
+            }
+            aria-label="Toggle Menu"
           >
             {mobileOpen ? (
               <X size={26} />
@@ -227,36 +215,99 @@ export default function Navbar() {
           MOBILE MENU
       ========================= */}
       <div
-        className={`mobile-menu ${
+        className={`mobile-overlay ${
           mobileOpen ? 'open' : ''
         }`}
       >
-        <div className="mobile-menu-content">
-          {NAV_LINKS.map((item) => (
+        <div
+          className="mobile-menu"
+          style={{
+            background:
+              themeName === 'dark'
+                ? '#101114'
+                : 'rgba(255,255,255,0.88)',
+          }}
+        >
+          {/* MOBILE HEADER */}
+          <div className="mobile-top">
+            <div className="mobile-logo">
+              FirstChoice
+            </div>
+
             <button
-              key={item.label}
+              className="mobile-close"
               onClick={() =>
-                handleNavClick(item.href)
+                setMobileOpen(false)
               }
-              className="mobile-link"
             >
-              {item.label}
+              <X size={24} />
             </button>
-          ))}
+          </div>
 
-          <button
-            className="mobile-login"
-            onClick={() => {
-              setMobileOpen(false);
-              navigate('/admin');
-            }}
-          >
-            Login
-          </button>
+          {/* MOBILE LINKS */}
+          <div className="mobile-links">
+            {NAV_LINKS.map((item) => (
+              <button
+                key={item.label}
+                className="mobile-link"
+                onClick={() =>
+                  handleNavClick(item.href)
+                }
+                style={{
+                  color: theme.dark,
+                  borderBottom: `1px solid ${theme.border}`,
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
 
-          <button className="mobile-cta">
-            Get Started
-          </button>
+          {/* MOBILE THEME SWITCHER */}
+          <div className="mobile-theme-wrapper">
+            <div className="mobile-theme-title">
+              Choose Theme
+            </div>
+
+            <div className="mobile-theme-switcher">
+              {Object.keys(themes).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`mobile-theme-btn ${
+                    themeName === t
+                      ? 'active-theme'
+                      : ''
+                  }`}
+                  style={{
+                    background:
+                      themes[t].green,
+                  }}
+                >
+                  {themeName === t && (
+                    <div className="theme-active-ring" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* MOBILE ACTIONS */}
+          <div className="mobile-actions">
+            <button
+              className="mobile-login-btn"
+              onClick={() => {
+                setMobileOpen(false);
+                navigate('/admin');
+              }}
+            >
+              Login
+            </button>
+
+            <button className="mobile-cta-btn">
+              Get Started
+            </button>
+          </div>
         </div>
       </div>
 
@@ -264,22 +315,71 @@ export default function Navbar() {
           STYLES
       ========================= */}
       <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .nav-container {
+          width: 100%;
+          max-width: 1220px;
+          margin: 0 auto;
+          padding: 0 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        /* =========================
+            LOGO
+        ========================= */
+        .logo-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          text-decoration: none;
+        }
+
+        .logo-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 18px;
+          font-weight: 800;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .logo-text {
+          display: flex;
+          align-items: center;
+          font-size: 20px;
+          font-weight: 800;
+          letter-spacing: -0.5px;
+        }
+
+        /* =========================
+            DESKTOP LINKS
+        ========================= */
         .desktop-links {
           display: flex;
           align-items: center;
-          gap: 28px;
+          gap: 32px;
           list-style: none;
           margin: 0;
           padding: 0;
         }
 
         .nav-link {
-          background: none;
           border: none;
+          background: none;
           cursor: pointer;
           font-size: 14px;
           font-weight: 600;
-          transition: 0.25s ease;
+          transition: all 0.25s ease;
+          position: relative;
           font-family: inherit;
         }
 
@@ -288,6 +388,9 @@ export default function Navbar() {
           transform: translateY(-1px);
         }
 
+        /* =========================
+            ACTIONS
+        ========================= */
         .desktop-actions {
           display: flex;
           align-items: center;
@@ -297,20 +400,33 @@ export default function Navbar() {
         .theme-switcher {
           display: flex;
           align-items: center;
-          gap: 6px;
-          margin-right: 6px;
+          gap: 8px;
+          margin-right: 8px;
+        }
+
+        .theme-dot {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: none;
+          cursor: pointer;
+          transition: 0.25s ease;
+        }
+
+        .theme-dot:hover {
+          transform: scale(1.15);
         }
 
         .login-btn {
           height: 42px;
           padding: 0 18px;
-          border-radius: 10px;
+          border-radius: 12px;
           border: 1.5px solid ${theme.green};
           background: transparent;
           color: ${theme.green};
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
-          transition: 0.25s ease;
+          transition: all 0.25s ease;
         }
 
         .login-btn:hover {
@@ -318,93 +434,189 @@ export default function Navbar() {
         }
 
         .cta-btn {
-          height: 42px;
-          padding: 0 20px;
+          height: 44px;
+          padding: 0 22px;
           border: none;
-          border-radius: 10px;
-          background: ${theme.green};
+          border-radius: 12px;
+          background: linear-gradient(
+            135deg,
+            ${theme.green},
+            ${theme.greenMid}
+          );
           color: white;
           font-weight: 700;
           cursor: pointer;
-          transition: 0.25s ease;
+          transition: all 0.25s ease;
         }
 
         .cta-btn:hover {
           transform: translateY(-2px);
-          background: ${theme.greenMid};
         }
 
+        /* =========================
+            MOBILE TOGGLE
+        ========================= */
         .mobile-toggle {
           display: none;
-          background: none;
           border: none;
+          background: none;
           cursor: pointer;
           color: ${theme.dark};
         }
 
-        .mobile-menu {
+        /* =========================
+            MOBILE MENU
+        ========================= */
+        .mobile-overlay {
           position: fixed;
           inset: 0;
           z-index: 999;
-          background: rgba(255,255,255,0.96);
-          backdrop-filter: blur(18px);
-          transform: translateY(-100%);
           opacity: 0;
           pointer-events: none;
           transition: all 0.35s ease;
+          backdrop-filter: blur(10px);
         }
 
-        .mobile-menu.open {
-          transform: translateY(0);
+        .mobile-overlay.open {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .mobile-menu-content {
-          padding: 100px 24px 40px;
+        .mobile-menu {
+          position: absolute;
+          inset: 0;
+          padding: 24px;
+          transform: translateY(-100%);
+          transition: transform 0.35s ease;
+          backdrop-filter: blur(18px);
+        }
+
+        .mobile-overlay.open .mobile-menu {
+          transform: translateY(0);
+        }
+
+        .mobile-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 12px;
+        }
+
+        .mobile-logo {
+          font-size: 22px;
+          font-weight: 800;
+          color: ${theme.dark};
+        }
+
+        .mobile-close {
+          border: none;
+          background: none;
+          cursor: pointer;
+          color: ${theme.dark};
+        }
+
+        .mobile-links {
+          margin-top: 48px;
           display: flex;
           flex-direction: column;
-          gap: 10px;
         }
 
         .mobile-link {
-          background: none;
           border: none;
+          background: none;
           text-align: left;
-          padding: 16px 0;
-          font-size: 20px;
+          padding: 18px 0;
+          font-size: 22px;
           font-weight: 700;
-          border-bottom: 1px solid ${theme.border};
-          color: ${theme.dark};
           cursor: pointer;
+          font-family: inherit;
         }
 
-        .mobile-login,
-        .mobile-cta {
-          margin-top: 14px;
-          height: 50px;
-          border-radius: 12px;
+        /* =========================
+            MOBILE THEME
+        ========================= */
+        .mobile-theme-wrapper {
+          margin-top: 40px;
+        }
+
+        .mobile-theme-title {
+          font-size: 14px;
           font-weight: 700;
+          color: ${theme.muted};
+          margin-bottom: 14px;
+        }
+
+        .mobile-theme-switcher {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .mobile-theme-btn {
+          width: 42px;
+          height: 42px;
+          border-radius: 14px;
+          border: none;
+          cursor: pointer;
+          position: relative;
+          transition: 0.25s ease;
+        }
+
+        .mobile-theme-btn:hover {
+          transform: scale(1.05);
+        }
+
+        .active-theme {
+          transform: scale(1.08);
+        }
+
+        .theme-active-ring {
+          position: absolute;
+          inset: -5px;
+          border-radius: 18px;
+          border: 2px solid ${theme.dark};
+        }
+
+        /* =========================
+            MOBILE ACTIONS
+        ========================= */
+        .mobile-actions {
+          margin-top: 44px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .mobile-login-btn {
+          height: 52px;
+          border-radius: 14px;
+          border: 1.5px solid ${theme.green};
+          background: transparent;
+          color: ${theme.green};
+          font-weight: 700;
+          cursor: pointer;
+          font-size: 15px;
+        }
+
+        .mobile-cta-btn {
+          height: 54px;
+          border: none;
+          border-radius: 14px;
+          background: linear-gradient(
+            135deg,
+            ${theme.green},
+            ${theme.greenMid}
+          );
+          color: white;
+          font-weight: 800;
           font-size: 15px;
           cursor: pointer;
         }
 
-        .mobile-login {
-          border: 1.5px solid ${theme.green};
-          background: transparent;
-          color: ${theme.green};
-        }
-
-        .mobile-cta {
-          border: none;
-          background: ${theme.green};
-          color: white;
-        }
-
         /* =========================
-           RESPONSIVE
+            RESPONSIVE
         ========================= */
-        @media (max-width: 900px) {
+        @media (max-width: 950px) {
           .desktop-links,
           .desktop-actions {
             display: none;
@@ -414,6 +626,20 @@ export default function Navbar() {
             display: flex;
             align-items: center;
             justify-content: center;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .nav-container {
+            padding: 0 18px;
+          }
+
+          .logo-text {
+            font-size: 18px;
+          }
+
+          .mobile-link {
+            font-size: 20px;
           }
         }
       `}</style>
