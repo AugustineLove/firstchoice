@@ -180,7 +180,7 @@ export default function Navbar() {
             <button
               className="login-btn"
               onClick={() =>
-                navigate('/admin')
+                navigate('/login')
               }
             >
               Login
