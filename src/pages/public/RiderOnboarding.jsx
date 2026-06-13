@@ -63,7 +63,7 @@ export default function RiderOnboarding() {
 
       /* Optionally set starting location */
       if (form.latitude && form.longitude) {
-        await authFetch('/riders/location', {
+        await authFetch('/api/riders/location', {
           method: 'PATCH',
           body: JSON.stringify({ latitude: form.latitude, longitude: form.longitude }),
         }).catch(() => {});
