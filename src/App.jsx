@@ -12,6 +12,7 @@ import RiderOnboarding from './pages/public/RiderOnboarding'
 import AdminDashboard from './pages/public/AdminDashboard'
 import CustomerHome from './pages/public/CustomerHome'
 import VendorOnboarding from './pages/public/VendorOnboarding'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/login"         element={<LoginPage />} />
           <Route path="/register"      element={<RegisterPage />} />
           <Route path="/register/:type" element={<RegisterPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Admin */}
           <Route path="/admin/dashboard" element={
