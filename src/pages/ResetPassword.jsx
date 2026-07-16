@@ -24,6 +24,7 @@ export default function ResetPassword() {
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
+    console.log(JSON.stringify(oobCode));
     if (!oobCode) {
       setStatus('invalid');
       return;
