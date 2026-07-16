@@ -1,30 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  getAuth,
-  verifyPasswordResetCode,
-  confirmPasswordReset,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
-import { firebaseApp } from '../config/firebase';
 
 
-const auth = getAuth(firebaseApp);
-const BACKEND_URL = import.meta.env.VITE_API_URL + '/auth/sync-reset-password';
-// If you're on CRA instead of Vite, swap for process.env.REACT_APP_API_URL
+const BACKEND_URL = import.meta.env.VITE_API_URL;
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
-  const oobCode = searchParams.get('oobCode');
 
-  const [status, setStatus] = useState('verifying'); // verifying | ready | invalid | submitting | done | sync-failed
-  const [email, setEmail] = useState('');
+  const [searchParams] = useSearchParams();
+
+  const token = searchParams.get("token");
+
+  const [status, setStatus] = useState(
+    token ? 'ready' : 'invalid'
+  );
+
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
-    console.log(JSON.stringify(oobCode));
+    console.log(JSON.stringify(`OobCode: ${oobCode}`));
     if (!oobCode) {
       setStatus('invalid');
       return;
@@ -37,38 +32,58 @@ export default function ResetPassword() {
       .catch(() => setStatus('invalid'));
   }, [oobCode]);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
+async function handleSubmit(e) {
+  e.preventDefault();
 
-    if (password.length < 6) {
-      setFormError('Password must be at least 6 characters.');
-      return;
-    }
-    if (password !== confirm) {
-      setFormError('Passwords do not match.');
-      return;
-    }
+  setFormError('');
 
-    setStatus('submitting');
-    try {
-      await confirmPasswordReset(auth, oobCode, password);
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await cred.user.getIdToken();
-
-      const res = await fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, newPassword: password }),
-      });
-      const data = await res.json();
-
-      setStatus(data.success ? 'done' : 'sync-failed');
-    } catch (err) {
-      setFormError(err.message || 'Something went wrong.');
-      setStatus('ready');
-    }
+  if(password.length < 6){
+    setFormError("Password must be at least 6 characters");
+    return;
   }
+
+  if(password !== confirm){
+    setFormError("Passwords do not match");
+    return;
+  }
+
+  setStatus("submitting");
+
+  try {
+
+    const res = await fetch(
+      `${BACKEND_URL}/auth/reset-password`,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify({
+          token,
+          password
+        })
+      }
+    );
+
+
+    const data = await res.json();
+
+
+    if(!res.ok){
+      throw new Error(data.message || "Reset failed");
+    }
+
+
+    setStatus("done");
+
+
+  } catch(error){
+
+    setFormError(error.message);
+    setStatus("ready");
+
+  }
+}
 
   return (
     <div style={styles.wrap}>
@@ -84,7 +99,7 @@ export default function ResetPassword() {
 
       {(status === 'ready' || status === 'submitting') && (
         <form onSubmit={handleSubmit}>
-          <p style={styles.muted}>Resetting password for <b>{email}</b></p>
+          <p style={styles.muted}>Resetting password</p>
           <input
             type="password"
             placeholder="New password (min. 6 characters)"
