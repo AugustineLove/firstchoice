@@ -6,7 +6,8 @@ import {
   confirmPasswordReset,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { firebaseApp } from '../firebase'; // adjust to your actual config file path
+import { firebaseApp } from '../config/firebase';
+
 
 const auth = getAuth(firebaseApp);
 const BACKEND_URL = import.meta.env.VITE_API_URL + '/auth/sync-reset-password';
