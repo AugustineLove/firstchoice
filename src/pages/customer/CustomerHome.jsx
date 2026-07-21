@@ -129,10 +129,25 @@ export default function CustomerHome() {
           </div>
         )}
 
-        {!loading && !error && vendors.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14 }}>
-            {vendors.map((v) => <VendorCard key={v.id} vendor={v} onClick={() => navigate(`/vendor/${v.id}`)} />)}
-          </div>
+        {!loading && !error && vendors.length > 0 && ( 
+          <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns:
+      window.innerWidth < 768
+        ? 'repeat(2, 1fr)'
+        : 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: 14,
+  }}
+>
+  {vendors.map((v) => (
+    <VendorCard
+      key={v.id}
+      vendor={v}
+      onClick={() => navigate(`/vendor/${v.id}`)}
+    />
+  ))}
+</div>
         )}
       </div>
     </div>
