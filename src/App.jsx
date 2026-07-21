@@ -26,9 +26,15 @@ import ProfilePage from './pages/customer/ProfilePage'
 import NotificationsPage from './pages/customer/NotificationsPage'
 import CustomerHome from './pages/customer/CustomerHome'
 import CustomerShell from './components/CustomerShell'
+import NotificationToast from './components/NotificationToast'
+import InstallPrompt from './components/InstallPrompt'
+import { useNotifications } from './providers/useNotifications'
 
 export default function App() {
+  const { toast, dismissToast, openToast } = useNotifications();
+
   return (
+    <>
     <ThemeProvider>
       <AuthProvider>
         {/* Cart/Socket only matter for the customer experience, but wrapping
@@ -109,9 +115,12 @@ export default function App() {
                 <ProtectedRoute roles={['CUSTOMER']}><NotificationsPage /></ProtectedRoute>
               } />
             </Routes>
+    <NotificationToast toast={toast} onOpen={openToast} onDismiss={dismissToast} />
+      <InstallPrompt />
           </SocketProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
+  </>
   )
 }

@@ -1,141 +1,187 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Plus, Minus, MapPin, Locate, User, Wallet, Smartphone, Info, ShoppingCart } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
+import {
+  ShoppingBag, MapPin, User, CreditCard, Receipt, Search, X, CheckCircle2,
+  LocateFixed, Loader2, Plus, Minus, Trash2, Info,
+} from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useCart } from '../../context/CartContext';
+
+function filterLocations(all, query) {
+  if (!query.trim()) return all;
+  const q = query.toLowerCase();
+  return all.filter((l) => l.name.toLowerCase().includes(q) || l.address.toLowerCase().includes(q));
+}
 
 export default function CartPage() {
   const navigate = useNavigate();
+  const { authFetch } = useAuth();
   const { theme } = useTheme();
-  const { items, subtotal, deliveryFee, total, updateQuantity, removeItem, clear } = useCart();
+  const { items, updateQuantity, removeItem, addItem, clear, subtotal, deliveryFee, total } = useCart();
 
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  // Saved locations
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+
   const [deliverToSomeoneElse, setDeliverToSomeoneElse] = useState(false);
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
 
-  const [address, setAddress] = useState('');
-  const [locationName, setLocationName] = useState('');
-  const [locating, setLocating] = useState(false);
-  const [usingCurrent, setUsingCurrent] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
 
-  const addressReady = address.trim().length > 0;
+  const loadLocations = useCallback(async () => {
+    setLoadingLocations(true);
+    try {
+      const res = await authFetch('/locations'); // adjust to your saved-locations endpoint if different
+      const json = await res.json();
+      if (json.success) setLocations(json.data.locations ?? json.data);
+    } catch {}
+    setLoadingLocations(false);
+  }, [authFetch]);
+
+  useEffect(() => { loadLocations(); }, [loadLocations]);
+
+  const resolvedAddress = usingCurrentLocation && currentPosition
+    ? `GPS: ${currentPosition.latitude.toFixed(5)}, ${currentPosition.longitude.toFixed(5)}`
+    : selectedLocation?.address ?? '';
+  const locationName = selectedLocation?.name ?? (usingCurrentLocation ? 'Current location' : '');
+  const addressReady = !!selectedLocation || (usingCurrentLocation && !!currentPosition);
 
   function useCurrentLocation() {
-    if (!navigator.geolocation) return;
+    if (!('geolocation' in navigator)) {
+      setLocationError('Location is not supported by this browser.');
+      return;
+    }
     setLocating(true);
+    setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setAddress(`GPS: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
-        setLocationName('Current location');
-        setUsingCurrent(true);
+        setCurrentPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setUsingCurrentLocation(true);
+        setSelectedLocation(null);
         setLocating(false);
       },
-      () => setLocating(false),
-      { enableHighAccuracy: true }
+      (err) => {
+        setLocationError(err.message || 'Could not get your location.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
-  function goToCheckout() {
+  function pickLocation(loc) {
+    setSelectedLocation(loc);
+    setUsingCurrentLocation(false);
+    setCurrentPosition(null);
+  }
+
+  function placeOrder() {
     if (!addressReady) return;
     if (deliverToSomeoneElse && (!recipientName.trim() || !recipientPhone.trim())) return;
     navigate('/checkout', {
       state: {
-        address, locationName, paymentMethod,
+        address: resolvedAddress,
+        locationName,
+        paymentMethod,
         recipientName: deliverToSomeoneElse ? recipientName.trim() : null,
         recipientPhone: deliverToSomeoneElse ? recipientPhone.trim() : null,
       },
     });
   }
 
-  if (items.length === 0) {
+  if (!items || items.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-        <TopBar title="Cart" onBack={() => navigate(-1)} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
-          <ShoppingCart size={56} color="#d1d5db" />
-          <p style={{ fontWeight: 700, color: '#6b7280', marginTop: 16, fontSize: 17 }}>Your cart is empty</p>
-          <p style={{ color: '#9ca3af', fontSize: 14, marginTop: 4 }}>Add items from a vendor to get started</p>
-          <button onClick={() => navigate('/home')} style={{ marginTop: 20, background: theme.green, color: '#fff', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-            Browse vendors
-          </button>
+      <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', color: '#9ca3af' }}>
+          <ShoppingBag size={48} style={{ marginBottom: 14 }} />
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#6b7280' }}>Your cart is empty</div>
+          <div style={{ fontSize: 14, marginTop: 6 }}>Add items from a vendor to get started</div>
         </div>
       </div>
     );
   }
 
+  const recipientReady = !deliverToSomeoneElse || (recipientName.trim() && recipientPhone.trim());
+  const canPlaceOrder = addressReady && recipientReady;
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 100 }}>
-      <TopBar title={`Cart (${items.length} item${items.length !== 1 ? 's' : ''})`} onBack={() => navigate(-1)}
-        action={<button onClick={clear} style={{ background: 'none', border: 'none', color: '#dc2626', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Clear all</button>} />
+    <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 120 }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 640, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 800, fontSize: 16 }}>Cart ({items.length} item{items.length !== 1 ? 's' : ''})</span>
+          <button onClick={clear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>Clear all</button>
+        </div>
+      </div>
 
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '16px 20px' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: 20 }}>
 
-        {/* Items */}
-        <SectionCard title="Your Items" icon={<ShoppingCart size={16} color={theme.green} />}>
+        {/* ── ITEMS ── */}
+        <SectionCard title="Your Items" icon={<ShoppingBag size={16} color={theme.green} />}>
           {items.map((item, i) => (
-            <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderTop: i > 0 ? '1px solid #f0f0f0' : 'none' }}>
-              <div style={{
-                width: 54, height: 54, borderRadius: 10, flexShrink: 0,
-                background: item.image ? `url(${item.image}) center/cover` : '#ecfdf5',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-              }}>{!item.image && '🍛'}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                {item.selectedVariants?.length > 0 && (
-                  <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.selectedVariants.map((v) => v.variantName).join(', ')}
-                  </div>
-                )}
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>GHS {item.price.toFixed(2)} each</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10 }}>
-                <IconBtn icon={<Minus size={15} />} onClick={() => updateQuantity(item.productId, item.quantity - 1)} disabled={item.quantity <= 1} />
-                <span style={{ padding: '0 10px', fontWeight: 800 }}>{item.quantity}</span>
-                <IconBtn icon={<Plus size={15} />} onClick={() => updateQuantity(item.productId, item.quantity + 1)} />
-              </div>
-              <div style={{ width: 70, textAlign: 'right' }}>
-                <div style={{ fontWeight: 800, fontSize: 13, color: theme.green }}>GHS {(item.price * item.quantity).toFixed(2)}</div>
-                <button onClick={() => removeItem(item.productId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', marginTop: 4 }}>
-                  <Trash2 size={13} />
-                </button>
-              </div>
+            <div key={item.productId}>
+              <CartItemRow item={item} theme={theme} onQty={(q) => updateQuantity(item.productId, q)} onRemove={() => removeItem(item.productId)} />
+              {i < items.length - 1 && <div style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />}
             </div>
           ))}
         </SectionCard>
 
-        {/* Delivery location */}
+        {/* ── DELIVERY LOCATION ── */}
         <SectionCard title="Delivery Location" icon={<MapPin size={16} color={theme.green} />}>
-          <input value={address} onChange={(e) => { setAddress(e.target.value); setUsingCurrent(false); }}
-            placeholder="Enter delivery address..."
-            style={{ width: '100%', height: 44, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' }} />
-          <button onClick={useCurrentLocation} disabled={locating} style={{
-            marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-            border: `1px solid ${usingCurrent ? theme.green : '#e5e7eb'}`, background: usingCurrent ? `${theme.green}12` : '#f9fafb', width: '100%',
-          }}>
-            <Locate size={16} color={usingCurrent ? theme.green : '#9ca3af'} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: usingCurrent ? theme.green : '#6b7280' }}>
-              {locating ? 'Getting location...' : usingCurrent ? '✓ Using current location' : 'Use my current location'}
+          {locationError && <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{locationError}</div>}
+
+          <LocationPicker
+            hint="Search delivery location..."
+            selected={selectedLocation}
+            locations={locations}
+            loading={loadingLocations}
+            accent={theme.green}
+            overrideLabel={usingCurrentLocation ? '📍 Current location' : null}
+            onPick={pickLocation}
+          />
+
+          <button
+            onClick={useCurrentLocation}
+            disabled={locating}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%', marginTop: 10,
+              padding: '10px 14px', borderRadius: 10, cursor: locating ? 'default' : 'pointer',
+              border: `1px solid ${usingCurrentLocation ? theme.green : '#e5e7eb'}`,
+              background: usingCurrentLocation ? `${theme.green}14` : '#f9fafb',
+              fontFamily: 'inherit',
+            }}
+          >
+            {locating
+              ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: theme.green }} />
+              : <LocateFixed size={16} color={usingCurrentLocation ? theme.green : '#9ca3af'} />}
+            <span style={{ fontSize: 13, fontWeight: 600, color: usingCurrentLocation ? theme.green : '#6b7280' }}>
+              {locating ? 'Getting location...' : usingCurrentLocation ? '✓ Using current location' : 'Use my current location'}
             </span>
           </button>
         </SectionCard>
 
-        {/* Recipient */}
+        {/* ── RECIPIENT ── */}
         <SectionCard title="Recipient" icon={<User size={16} color={theme.green} />}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>Deliver to someone else</div>
-              <div style={{ fontSize: 12, color: '#9ca3af' }}>Enter recipient details below</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Deliver to someone else</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>Enter recipient details below</div>
             </div>
-            <Switch checked={deliverToSomeoneElse} onChange={setDeliverToSomeoneElse} color={theme.green} />
+            <Toggle checked={deliverToSomeoneElse} onChange={setDeliverToSomeoneElse} color={theme.green} />
           </div>
+
           {deliverToSomeoneElse && (
             <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="Recipient's Name" style={inputStyle} />
-              <input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} placeholder="Recipient's Phone" style={inputStyle} />
-              <div style={{ display: 'flex', gap: 8, padding: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+              <input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="e.g. Ama Mensah" style={inputStyle} />
+              <input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} placeholder="0241234567" style={inputStyle} />
+              <div style={{ display: 'flex', gap: 8, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 10 }}>
                 <Info size={14} color="#92400e" style={{ flexShrink: 0, marginTop: 1 }} />
                 <span style={{ fontSize: 12, color: '#92400e' }}>The rider will contact this person for delivery.</span>
               </div>
@@ -143,98 +189,245 @@ export default function CartPage() {
           )}
         </SectionCard>
 
-        {/* Payment */}
-        <SectionCard title="Payment Method" icon={<Wallet size={16} color={theme.green} />}>
+        {/* ── PAYMENT ── */}
+        <SectionCard title="Payment Method" icon={<CreditCard size={16} color={theme.green} />}>
           <div style={{ display: 'flex', gap: 12 }}>
-            <PayOption value="CASH" label="Cash" icon={<Wallet size={20} />} active={paymentMethod === 'CASH'} onClick={setPaymentMethod} theme={theme} />
-            <PayOption value="MOMO" label="MoMo" icon={<Smartphone size={20} />} active={paymentMethod === 'MOMO'} onClick={setPaymentMethod} theme={theme} />
+            <PayOption value="CASH" label="Cash" icon="💵" selected={paymentMethod} onSelect={setPaymentMethod} theme={theme} />
+            <PayOption value="MOMO" label="MoMo" icon="📱" selected={paymentMethod} onSelect={setPaymentMethod} theme={theme} />
           </div>
         </SectionCard>
 
-        {/* Summary */}
-        <SectionCard title="Order Summary" icon={null}>
-          <SummaryRow label="Subtotal" value={`GHS ${subtotal.toFixed(2)}`} />
-          <SummaryRow label="Delivery Fee" value={`GHS ${deliveryFee.toFixed(2)}`} />
+        {/* ── SUMMARY ── */}
+        <SectionCard title="Order Summary" icon={<Receipt size={16} color={theme.green} />}>
+          <SummaryRow label="Subtotal" value={`GHS ${Number(subtotal).toFixed(2)}`} />
+          <SummaryRow label="Delivery Fee" value={`GHS ${Number(deliveryFee).toFixed(2)}`} />
           <div style={{ borderTop: '1px solid #f0f0f0', margin: '12px 0' }} />
-          <SummaryRow label="Total" value={`GHS ${total.toFixed(2)}`} bold />
+          <SummaryRow label="Total" value={`GHS ${Number(total).toFixed(2)}`} bold theme={theme} />
         </SectionCard>
       </div>
 
-      {/* Bottom bar */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #f0f0f0', padding: '12px 20px 20px' }}>
+      {/* ── PLACE ORDER BAR ── */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #f0f0f0', padding: '12px 20px' }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           {!addressReady && (
-            <div style={{ textAlign: 'center', fontSize: 12, color: '#9ca3af', fontWeight: 600, marginBottom: 8 }}>Select a delivery location to continue</div>
+            <div style={{ textAlign: 'center', fontSize: 12, color: '#9ca3af', fontWeight: 600, marginBottom: 8 }}>
+              Select a delivery location to continue
+            </div>
           )}
-          <button onClick={goToCheckout} disabled={!addressReady} style={{
-            width: '100%', height: 50, border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, fontFamily: 'inherit',
-            background: addressReady ? theme.green : '#d1d5db', color: '#fff', cursor: addressReady ? 'pointer' : 'not-allowed',
-          }}>
-            Continue to Review  •  GHS {total.toFixed(2)}
+          <button
+            onClick={placeOrder}
+            disabled={!canPlaceOrder}
+            style={{
+              width: '100%', height: 48, border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, fontFamily: 'inherit',
+              background: canPlaceOrder ? theme.green : '#d1d5db', color: '#fff', cursor: canPlaceOrder ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Continue to Review &nbsp;•&nbsp; GHS {Number(total).toFixed(2)}
           </button>
         </div>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
-/* ── shared bits ── */
-function TopBar({ title, onBack, action }) {
+/* ════════════════════════════════════════════
+   LocationPicker — select-only: a search box that
+   filters the saved-location dropdown; there is no
+   free-text address field, the user must pick a
+   result to set the location.
+════════════════════════════════════════════ */
+function LocationPicker({ hint, selected, locations, loading, accent, overrideLabel, onPick }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const displayLabel = overrideLabel ?? selected?.name;
+  const results = filterLocations(locations, query);
+
+  function pick(loc) {
+    onPick(loc);
+    setQuery('');
+    setOpen(false);
+  }
+
   return (
-    <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 10 }}>
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}><ArrowLeft size={20} /></button>
-        <span style={{ fontWeight: 800, fontSize: 16, flex: 1 }}>{title}</span>
-        {action}
-      </div>
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      {displayLabel && !open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
+            padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+            border: `1.5px solid ${accent}`, background: `${accent}14`,
+          }}
+        >
+          <CheckCircle2 size={16} color={accent} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{displayLabel}</div>
+            {selected?.address && (
+              <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.address}</div>
+            )}
+          </div>
+        </button>
+      ) : (
+        <div style={{ position: 'relative' }}>
+          <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
+          <input
+            readOnly={false}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            placeholder={hint}
+            style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12 }}
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+              <X size={15} color="#9ca3af" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
+          background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 240, overflowY: 'auto',
+        }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
+            </div>
+          ) : results.length === 0 ? (
+            <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
+          ) : (
+            results.map((loc, i) => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => pick(loc)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                  padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
+                }}
+              >
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MapPin size={16} color={accent} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function SectionCard({ title, icon, children }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0', padding: 16, marginBottom: 14 }}>
+    <div style={{ background: '#fff', border: '1px solid #f0f0f0', borderRadius: 16, padding: 16, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-        {icon}<span style={{ fontWeight: 800, fontSize: 14 }}>{title}</span>
+        {icon}
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>{title}</span>
       </div>
       {children}
     </div>
   );
 }
 
-function IconBtn({ icon, onClick, disabled }) {
-  return <button onClick={onClick} disabled={disabled} style={{ background: 'none', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', padding: 8, color: disabled ? '#d1d5db' : '#10b981', display: 'flex' }}>{icon}</button>;
-}
-
-function Switch({ checked, onChange, color }) {
+function CartItemRow({ item, theme, onQty, onRemove }) {
+  const variants = (item.selectedVariants ?? []).map((v) => v.variantName).filter(Boolean).join(', ');
   return (
-    <div onClick={() => onChange(!checked)} style={{
-      width: 44, height: 26, borderRadius: 50, background: checked ? color : '#e5e7eb', cursor: 'pointer', padding: 3, transition: 'background 0.2s',
-    }}>
-      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', transform: checked ? 'translateX(18px)' : 'translateX(0)', transition: 'transform 0.2s' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+      <div style={{
+        width: 54, height: 54, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
+        background: item.image ? `url(${item.image}) center/cover` : `${theme.green}14`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {!item.image && '🍔'}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+        {variants && <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{variants}</div>}
+        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>GHS {Number(item.price).toFixed(2)} each</div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+        <button onClick={() => item.quantity > 1 && onQty(item.quantity - 1)} disabled={item.quantity <= 1} style={qtyBtnStyle}>
+          <Minus size={14} color={item.quantity > 1 ? theme.green : '#d1d5db'} />
+        </button>
+        <span style={{ width: 24, textAlign: 'center', fontSize: 14, fontWeight: 800, color: '#111827' }}>{item.quantity}</span>
+        <button onClick={() => onQty(item.quantity + 1)} style={qtyBtnStyle}>
+          <Plus size={14} color={theme.green} />
+        </button>
+      </div>
+      <div style={{ width: 68, textAlign: 'right', fontSize: 13, fontWeight: 800, color: theme.green }}>
+        GHS {(item.price * item.quantity).toFixed(2)}
+      </div>
+      <button onClick={onRemove} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: '#9ca3af' }}>
+        <Trash2 size={16} />
+      </button>
     </div>
   );
 }
 
-function PayOption({ value, label, icon, active, onClick, theme }) {
+function Toggle({ checked, onChange, color }) {
   return (
-    <button onClick={() => onClick(value)} style={{
-      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 0', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-      border: `${active ? 1.5 : 1}px solid ${active ? theme.green : '#e5e7eb'}`, background: active ? `${theme.green}12` : '#f9fafb',
-      color: active ? theme.green : '#6b7280',
-    }}>
-      {icon}<span style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
+    <button
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 42, height: 24, borderRadius: 50, border: 'none', cursor: 'pointer', position: 'relative',
+        background: checked ? color : '#d1d5db', transition: 'background 0.15s', flexShrink: 0,
+      }}
+    >
+      <div style={{
+        width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3,
+        left: checked ? 21 : 3, transition: 'left 0.15s',
+      }} />
     </button>
   );
 }
 
-function SummaryRow({ label, value, bold }) {
+function PayOption({ value, label, icon, selected, onSelect, theme }) {
+  const active = value === selected;
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: bold ? 0 : 8 }}>
-      <span style={{ fontSize: bold ? 15 : 14, fontWeight: bold ? 800 : 500, color: bold ? '#0f1117' : '#6b7280' }}>{label}</span>
-      <span style={{ fontSize: bold ? 16 : 14, fontWeight: bold ? 900 : 600, color: bold ? '#10b981' : '#0f1117' }}>{value}</span>
+    <button
+      onClick={() => onSelect(value)}
+      style={{
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+        padding: '14px 0', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+        border: `${active ? 1.5 : 1}px solid ${active ? theme.green : '#e5e7eb'}`,
+        background: active ? `${theme.green}14` : '#f9fafb',
+      }}
+    >
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: active ? theme.green : '#6b7280' }}>{label}</span>
+    </button>
+  );
+}
+
+function SummaryRow({ label, value, bold, theme }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+      <span style={{ fontSize: bold ? 15 : 14, fontWeight: bold ? 800 : 500, color: bold ? '#111827' : '#6b7280' }}>{label}</span>
+      <span style={{ fontSize: bold ? 16 : 14, fontWeight: bold ? 900 : 600, color: bold ? theme.green : '#111827' }}>{value}</span>
     </div>
   );
 }
 
-const inputStyle = { width: '100%', height: 42, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' };
+const inputStyle = { width: '100%', height: 44, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' };
+const qtyBtnStyle = { background: 'none', border: 'none', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' };
