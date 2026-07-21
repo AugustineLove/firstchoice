@@ -26,7 +26,7 @@ export default function LoginPage() {
       if (user.role === 'ADMIN')    navigate('/admin/dashboard');
       else if (user.role === 'VENDOR') navigate('/vendor/dashboard');
       else if (user.role === 'RIDER')  navigate('/rider/dashboard');
-      else                             navigate('/');
+      else                             navigate('/home');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {

@@ -13,11 +13,18 @@ import AdminDashboard from './pages/public/AdminDashboard'
 import CustomerHome from './pages/public/CustomerHome'
 import VendorOnboarding from './pages/public/VendorOnboarding'
 import ResetPassword from './pages/ResetPassword'
+import VendorPage from './pages/public/VendorPage'
+import CartPage from './pages/public/CartPage'
+import CheckoutPage from './pages/public/CheckoutPage'
+import OrdersPage from './pages/public/OrdersPage'
+import DeliveriesPage from './pages/public/DeliveriesPage'
+import { CartProvider } from './context/CartContext'
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <CartProvider>
         <Routes>
           {/* Public */}
           <Route path="/"              element={<HomePage />} />
@@ -33,6 +40,13 @@ export default function App() {
               <AdminDashboard />
             </ProtectedRoute>
           } />
+
+          <Route path="/home" element={<ProtectedRoute roles={['CUSTOMER']}><CustomerHome/></ProtectedRoute>} />
+          <Route path="/vendor/:id" element={<ProtectedRoute roles={['CUSTOMER']}><VendorPage/></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute roles={['CUSTOMER']}><CartPage/></ProtectedRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute roles={['CUSTOMER']}><CheckoutPage/></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute roles={['CUSTOMER']}><OrdersPage/></ProtectedRoute>} />
+          <Route path="/deliveries" element={<ProtectedRoute roles={['CUSTOMER']}><DeliveriesPage/></ProtectedRoute>} />
 
           {/* Vendor */}
           <Route path="/vendor/onboarding" element={
@@ -65,6 +79,7 @@ export default function App() {
             </ProtectedRoute>
           } />
         </Routes>
+        </CartProvider>
       </AuthProvider>
     </ThemeProvider>
   )
