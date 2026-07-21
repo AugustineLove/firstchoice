@@ -25,7 +25,7 @@ import DeliveriesPage from './pages/customer/DeliveriesPage'
 import ProfilePage from './pages/customer/ProfilePage'
 import NotificationsPage from './pages/customer/NotificationsPage'
 import CustomerHome from './pages/customer/CustomerHome'
-import CustomerShell from './components/customerShell'
+import CustomerShell from './components/CustomerShell'
 
 export default function App() {
   return (
