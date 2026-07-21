@@ -298,7 +298,7 @@ export default function Navbar() {
               className="mobile-login-btn"
               onClick={() => {
                 setMobileOpen(false);
-                navigate('/admin');
+                navigate('/login');
               }}
             >
               Login

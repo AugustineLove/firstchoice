@@ -5,7 +5,7 @@ import { ArrowLeft, Star, MapPin, Clock, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
-import ProductModal from './ProductModal';
+import ProductModal from '../public/ProductModal';
 
 const TYPE_STYLE = {
   food:        { emoji: '🍛', a: '#10B981', b: '#34D399' },

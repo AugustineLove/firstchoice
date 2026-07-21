@@ -13,11 +13,11 @@ import { useAuth } from './AuthContext';
   set it via env so it's easy to point at local/staging/prod.
 */
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://api.firstchoice-ten.com';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://firstchoice-backend.onrender.com';
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
-  const { user, token } = useAuth(); // adjust to however AuthContext exposes the JWT
+  const { user, token } = useAuth(); 
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [toasts, setToasts] = useState([]);

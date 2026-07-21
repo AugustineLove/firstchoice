@@ -10,75 +10,106 @@ import RiderDashboard from './pages/public/RiderDashboard'
 import VendorDashboard from './pages/public/VendorDashboard'
 import RiderOnboarding from './pages/public/RiderOnboarding'
 import AdminDashboard from './pages/public/AdminDashboard'
-import CustomerHome from './pages/public/CustomerHome'
 import VendorOnboarding from './pages/public/VendorOnboarding'
 import ResetPassword from './pages/ResetPassword'
-import VendorPage from './pages/public/VendorPage'
-import CartPage from './pages/public/CartPage'
-import CheckoutPage from './pages/public/CheckoutPage'
-import OrdersPage from './pages/public/OrdersPage'
-import DeliveriesPage from './pages/public/DeliveriesPage'
+
+// ── New: customer web app ──────────────────────────────────────
 import { CartProvider } from './context/CartContext'
+import { SocketProvider } from './context/SocketContext'
+import VendorPage from './pages/customer/VendorPage'
+import CartPage from './pages/customer/CartPage'
+import CheckoutPage from './pages/customer/CheckoutPage'
+import OrdersPage from './pages/customer/OrdersPage'
+import OrderTrackingPage from './pages/customer/OrderTrackingPage'
+import DeliveriesPage from './pages/customer/DeliveriesPage'
+import ProfilePage from './pages/customer/ProfilePage'
+import NotificationsPage from './pages/customer/NotificationsPage'
+import CustomerHome from './pages/customer/CustomerHome'
+import CustomerShell from './components/customerShell'
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        {/* Cart/Socket only matter for the customer experience, but wrapping
+            the whole tree is harmless — CartContext is a no-op until items
+            are added, and SocketContext no-ops until `user` is set. */}
         <CartProvider>
-        <Routes>
-          {/* Public */}
-          <Route path="/"              element={<HomePage />} />
-          <Route path="/team"          element={<TeamPage />} />
-          <Route path="/login"         element={<LoginPage />} />
-          <Route path="/register"      element={<RegisterPage />} />
-          <Route path="/register/:type" element={<RegisterPage />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <SocketProvider>
+            <Routes>
+              {/* Public */}
+              <Route path="/"              element={<HomePage />} />
+              <Route path="/team"          element={<TeamPage />} />
+              <Route path="/login"         element={<LoginPage />} />
+              <Route path="/register"      element={<RegisterPage />} />
+              <Route path="/register/:type" element={<RegisterPage />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Admin */}
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute roles={['ADMIN']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
+              {/* Admin */}
+              <Route path="/admin/dashboard" element={
+                <ProtectedRoute roles={['ADMIN']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
 
-          <Route path="/home" element={<ProtectedRoute roles={['CUSTOMER']}><CustomerHome/></ProtectedRoute>} />
-          <Route path="/vendor/:id" element={<ProtectedRoute roles={['CUSTOMER']}><VendorPage/></ProtectedRoute>} />
-          <Route path="/cart" element={<ProtectedRoute roles={['CUSTOMER']}><CartPage/></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute roles={['CUSTOMER']}><CheckoutPage/></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute roles={['CUSTOMER']}><OrdersPage/></ProtectedRoute>} />
-          <Route path="/deliveries" element={<ProtectedRoute roles={['CUSTOMER']}><DeliveriesPage/></ProtectedRoute>} />
+              {/* Vendor */}
+              <Route path="/vendor/onboarding" element={
+                <ProtectedRoute roles={['VENDOR', 'CUSTOMER']}>
+                  <VendorOnboarding />
+                </ProtectedRoute>
+              } />
+              <Route path="/vendor/dashboard" element={
+                <ProtectedRoute roles={['VENDOR', 'ADMIN']}>
+                  <VendorDashboard />
+                </ProtectedRoute>
+              } />
 
-          {/* Vendor */}
-          <Route path="/vendor/onboarding" element={
-            <ProtectedRoute roles={['VENDOR', 'CUSTOMER']}>
-              <VendorOnboarding />
-            </ProtectedRoute>
-          } />
-          <Route path="/vendor/dashboard" element={
-            <ProtectedRoute roles={['VENDOR', 'ADMIN']}>
-              <VendorDashboard />
-            </ProtectedRoute>
-          } />
+              {/* Rider */}
+              <Route path="/rider/onboarding" element={
+                <ProtectedRoute roles={['RIDER', 'CUSTOMER']}>
+                  <RiderOnboarding />
+                </ProtectedRoute>
+              } />
+              <Route path="/rider/dashboard" element={
+                <ProtectedRoute roles={['RIDER', 'ADMIN']}>
+                  <RiderDashboard />
+                </ProtectedRoute>
+              } />
 
-          {/* Rider */}
-          <Route path="/rider/onboarding" element={
-            <ProtectedRoute roles={['RIDER', 'CUSTOMER']}>
-              <RiderOnboarding />
-            </ProtectedRoute>
-          } />
-          <Route path="/rider/dashboard" element={
-            <ProtectedRoute roles={['RIDER', 'ADMIN']}>
-              <RiderDashboard />
-            </ProtectedRoute>
-          } />
+              {/* Customer — wrapped in CustomerShell for the bottom nav bar.
+                  NOTE: /vendor/:id below is nested under the customer's own
+                  browse flow, so it's separate from /vendor/dashboard above
+                  even though they share the "/vendor" prefix. */}
+              <Route element={
+                <ProtectedRoute roles={['CUSTOMER']}>
+                  <CustomerShell />
+                </ProtectedRoute>
+              }>
+                <Route path="/home"          element={<CustomerHome />} />
+                <Route path="/orders"        element={<OrdersPage />} />
+                <Route path="/deliveries"    element={<DeliveriesPage />} />
+                <Route path="/profile"       element={<ProfilePage />} />
+              </Route>
 
-          {/* Customer */}
-          <Route path="/home" element={
-            <ProtectedRoute roles={['CUSTOMER']}>
-              <CustomerHome />
-            </ProtectedRoute>
-          } />
-        </Routes>
+              {/* Customer — pushed on top, no bottom nav (mirrors mobile's
+                  context.push() screens vs. the ShellRoute tabs) */}
+              <Route path="/vendor/:id" element={
+                <ProtectedRoute roles={['CUSTOMER']}><VendorPage /></ProtectedRoute>
+              } />
+              <Route path="/cart" element={
+                <ProtectedRoute roles={['CUSTOMER']}><CartPage /></ProtectedRoute>
+              } />
+              <Route path="/checkout" element={
+                <ProtectedRoute roles={['CUSTOMER']}><CheckoutPage /></ProtectedRoute>
+              } />
+              <Route path="/orders/:id" element={
+                <ProtectedRoute roles={['CUSTOMER']}><OrderTrackingPage /></ProtectedRoute>
+              } />
+              <Route path="/notifications" element={
+                <ProtectedRoute roles={['CUSTOMER']}><NotificationsPage /></ProtectedRoute>
+              } />
+            </Routes>
+          </SocketProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
