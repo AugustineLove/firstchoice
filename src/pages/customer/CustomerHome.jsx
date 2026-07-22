@@ -163,28 +163,98 @@ export default function CustomerHome() {
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
 
       {/* ── TOP BAR ── */}
-      <div style={{ background: `linear-gradient(135deg, ${theme.green}, #0d9488)`, borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div className='text-white' style={{
-            width: 40, height: 40, borderRadius: '50%', background: `${theme.green}18`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#fff', flexShrink: 0,
-          }}>{firstName[0]?.toUpperCase()}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 20, color: '#ffff' }}>Hello, {firstName} 👋</div>
-            <div style={{ fontSize: 12, color: '#fff' }}>What would you like today?</div>
-          </div>
-          <button onClick={() => navigate('/notifications')} style={iconBtnStyle}><Bell size={20} color="#fff" /></button>
-          {/* <button onClick={() => navigate('/cart')} style={{ ...iconBtnStyle, position: 'relative' }}>
-            <ShoppingBag size={20} color="#fff" />
-            {totalItems > 0 && (
-              <span style={{
-                position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%',
-                background: theme.green, color: '#fff', fontSize: 9, fontWeight: 900,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>{totalItems}</span>
-            )}
-          </button> */}
-        </div>
+      <div style={{ background: `#1B5E3B`, borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
+        <div
+  style={{
+    maxWidth: 1100,
+    margin: '0 auto',
+    padding: '18px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+  }}
+>
+  {/* Avatar */}
+  <div
+    style={{
+      width: 46,
+      height: 46,
+      borderRadius: '50%',
+      overflow: 'hidden',
+      background: '#ffffff22',
+      border: '2px solid #ffffff55',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    }}
+  >
+    <img
+      src="/icons/logo.png"
+      alt={firstName}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+      }}
+    />
+  </div>
+  <p className='text-white'>First Choice</p>
+
+
+  {/* Greeting */}
+  <div
+    style={{
+      flex: 1,
+      minWidth: 0,
+    }}
+  >
+    <div
+      style={{
+        fontWeight: 900,
+        fontSize: 20,
+        color: '#fff',
+        lineHeight: 1.2,
+        letterSpacing: '-0.3px',
+      }}
+    >
+      Hello, {firstName} 👋
+    </div>
+
+    <div
+      style={{
+        marginTop: 3,
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.8)',
+        fontWeight: 500,
+      }}
+    >
+      What would you like today?
+    </div>
+  </div>
+
+
+  {/* Notification Button */}
+  <button
+    onClick={() => navigate('/notifications')}
+    style={{
+      width: 42,
+      height: 42,
+      borderRadius: '50%',
+      border: '1px solid rgba(255,255,255,0.25)',
+      background: 'rgba(255,255,255,0.12)',
+      backdropFilter: 'blur(10px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      transition: 'all .2s ease',
+    }}
+  >
+    <Bell size={20} color="#fff" />
+  </button>
+</div>
 
         {/* ── SEARCH ── */}
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px 14px' }}>
