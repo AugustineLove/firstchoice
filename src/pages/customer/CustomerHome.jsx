@@ -171,12 +171,13 @@ export default function CustomerHome() {
         <span className="fc-topbar__avatar-ring" aria-hidden="true" />
         <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
       </div>
-      <span className="fc-topbar__wordmark">First Choice</span>
+      
     </div>
 
     {/* Greeting */}
     <div style={{ flex: 1, minWidth: 0 }}>
       <div className="fc-topbar__greeting">
+        {/* <span className="fc-topbar__wordmark">First Choice</span> */}
         Hello, {firstName} <span aria-hidden="true">👋</span>
       </div>
       <div className="fc-topbar__subtitle">What would you like today?</div>
@@ -251,6 +252,7 @@ export default function CustomerHome() {
   height: clamp(40px, 9vw, 46px);
   border-radius: 50%;
   // background: #fff;
+  // overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
