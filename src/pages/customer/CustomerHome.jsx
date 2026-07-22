@@ -246,32 +246,36 @@ export default function CustomerHome() {
     }
 
     .fc-topbar__avatar {
-      position: relative;
-      width: clamp(40px, 9vw, 46px);
-      height: clamp(40px, 9vw, 46px);
-    }
+  position: relative;
+  width: clamp(40px, 9vw, 46px);
+  height: clamp(40px, 9vw, 46px);
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 
     .fc-topbar__avatar-ring {
-      position: absolute;
-      inset: -4px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.5);
-      animation: fc-pulse 2.4s ease-in-out infinite;
-    }
-
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  animation: fc-pulse 2.4s ease-in-out infinite;
+}
     .fc-topbar__avatar-img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      display: block;
-      background: rgba(255,255,255,0.14);
-      border: 2px solid rgba(255,255,255,0.35);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
 
     .fc-topbar__wordmark {
-      font-size: 10.5px;
+      font-size: 12.5px;
       font-weight: 700;
       letter-spacing: 0.4px;
       color: rgba(255,255,255,0.85);
