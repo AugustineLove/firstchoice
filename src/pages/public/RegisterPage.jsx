@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 const ROLE_CONFIG = {
-  customer: { label:'Customer', icon:'👤', role:'CUSTOMER', color:'#3b82f6', desc:'Order food, deliveries & errands' },
+  customer: { label:'Customer', icon:'👤', role:'CUSTOMER', color:'#3b82f6', desc:'Order food, pick-up & errands' },
   vendor:   { label:'Vendor',   icon:'🏪', role:'CUSTOMER',  color:'#10b981', desc:'List products & receive orders' },
   rider:    { label:'Rider',    icon:'🏍️', role:'CUSTOMER',  color:'#f59e0b', desc:'Deliver orders & earn money'   },
 };
@@ -95,7 +95,7 @@ export default function RegisterPage() {
             <label style={labelStyle}>Full Name</label>
             <div style={{ position:'relative' }}>
               <User size={16} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#9ca3af' }}/>
-              <input type="text" placeholder="Kofi Mensah" value={form.name} onChange={set('name')} required style={inputStyle}
+              <input type="text" placeholder="Augustine Love" value={form.name} onChange={set('name')} required style={inputStyle}
                 onFocus={e => e.target.style.borderColor = theme.green}
                 onBlur={e  => e.target.style.borderColor = '#e5e7eb'} />
             </div>

@@ -1,7 +1,10 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, Loader2, Send, CheckCircle2, Package } from 'lucide-react';
+import {
+  ArrowLeft, Star, MapPin, Clock, Loader2, Send, CheckCircle2, Package,
+  Search, X, LocateFixed, User,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -13,11 +16,18 @@ const TYPE_STYLE = {
   electronics: { emoji: '📱', a: '#6366F1', b: '#818CF8' },
 };
 
-// NOTE ON THE FLOW BELOW: this replaces the old add-to-cart-per-product flow.
-// Products are shown for browsing/reference only — tapping one drops a line
-// into the order note as a shortcut. The actual order is a single free-text
-// request, submitted to POST /orders. Adjust the endpoint/payload shape to
-// match whatever the backend actually expects.
+// NOTE ON THE FLOW BELOW: products are shown for browsing/reference only —
+// tapping one drops a line into the order note as a shortcut. The order
+// itself is a single free-text note, submitted to POST /orders along with
+// a compulsory delivery location and an optional "for a friend" recipient.
+// The backend also still accepts the old structured items[] flow — this
+// screen just doesn't build that payload.
+
+function filterLocations(all, query) {
+  if (!query.trim()) return all;
+  const q = query.toLowerCase();
+  return all.filter((l) => l.name.toLowerCase().includes(q) || l.address.toLowerCase().includes(q));
+}
 
 export default function VendorPage() {
   const { id } = useParams();
@@ -31,6 +41,24 @@ export default function VendorPage() {
   const [error, setError]       = useState(null);
 
   const [note, setNote] = useState('');
+
+  // ── delivery location (compulsory) ──
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+  const [destination, setDestination] = useState(null); // saved location | null
+  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+
+  // ── payment ──
+  const [payment, setPayment] = useState('CASH');
+
+  // ── ordering for a friend (optional) ──
+  const [forFriend, setForFriend] = useState(false);
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -52,9 +80,29 @@ export default function VendorPage() {
     setLoading(false);
   }, [authFetch, id]);
 
+  const loadLocations = useCallback(async () => {
+    setLoadingLocations(true);
+    try {
+      const res = await authFetch('/locations');
+      const json = await res.json();
+      if (json.success) setLocations(json.data.locations ?? json.data);
+    } catch {
+      // non-fatal — user can still use current location
+    }
+    setLoadingLocations(false);
+  }, [authFetch]);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadLocations(); }, [loadLocations]);
 
   const style = TYPE_STYLE[vendor?.businessType?.toLowerCase()] || { emoji: '🏪', a: '#10B981', b: '#34D399' };
+
+  const destAddress = usingCurrentLocation && currentPosition
+    ? `GPS: ${currentPosition.latitude.toFixed(5)}, ${currentPosition.longitude.toFixed(5)}`
+    : destination?.address ?? '';
+  const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
+  const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
+  const hasDeliveryLocation = usingCurrentLocation ? !!currentPosition : !!destination;
 
   function addProductToNote(product) {
     setNote((prev) => {
@@ -64,8 +112,33 @@ export default function VendorPage() {
     });
   }
 
+  function useCurrentLocation() {
+    if (!('geolocation' in navigator)) {
+      setLocationError('Location is not supported by this browser.');
+      return;
+    }
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCurrentPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setUsingCurrentLocation(true);
+        setDestination(null);
+        setLocating(false);
+      },
+      (err) => {
+        setLocationError(err.message || 'Could not get your location.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  const friendDetailsValid = !forFriend || (recipientName.trim() && recipientPhone.trim());
+  const canSubmit = note.trim() && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
+
   async function submitOrder() {
-    if (!note.trim() || submitting) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -74,12 +147,26 @@ export default function VendorPage() {
         body: JSON.stringify({
           vendorId: id,
           note: note.trim(),
+          deliveryAddress: destAddress,
+          deliveryLatitude: destLat,
+          deliveryLongitude: destLng,
+          paymentMethod: payment,
+          ...(forFriend ? {
+            recipientName: recipientName.trim(),
+            recipientPhone: recipientPhone.trim(),
+          } : {}),
         }),
       });
       const json = await res.json();
       if (json.success) {
         setSubmitted(true);
         setNote('');
+        setDestination(null);
+        setUsingCurrentLocation(false);
+        setCurrentPosition(null);
+        setForFriend(false);
+        setRecipientName('');
+        setRecipientPhone('');
       } else {
         setSubmitError(json.message || 'Could not submit your order.');
       }
@@ -165,7 +252,7 @@ export default function VendorPage() {
           </div>
         )}
 
-        {/* ── ORDER NOTE + SUBMIT ── */}
+        {/* ── ORDER NOTE ── */}
         <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '28px 0 10px' }}>What would you like to order?</h2>
 
         {submitted ? (
@@ -191,29 +278,247 @@ export default function VendorPage() {
                 fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',
               }}
             />
+
+            {/* ── DELIVERY LOCATION (compulsory) ── */}
+            <Field label="DELIVER TO" icon={<MapPin size={15} color="#ef4444" />}>
+              <LocationPicker
+                hint="Search a saved location..."
+                selected={destination}
+                locations={locations}
+                loading={loadingLocations}
+                accent="#ef4444"
+                overrideLabel={usingCurrentLocation ? '📍 Current location' : null}
+                onPick={(loc) => { setDestination(loc); setUsingCurrentLocation(false); setCurrentPosition(null); }}
+              />
+            </Field>
+
+            <button
+              onClick={useCurrentLocation}
+              disabled={locating}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                padding: '10px 14px', borderRadius: 10, marginBottom: 14, cursor: locating ? 'default' : 'pointer',
+                border: `1px solid ${usingCurrentLocation ? theme.green : '#e5e7eb'}`,
+                background: usingCurrentLocation ? '#ecfdf5' : '#f9fafb',
+                fontFamily: 'inherit',
+              }}
+            >
+              {locating
+                ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: theme.green }} />
+                : <LocateFixed size={16} color={usingCurrentLocation ? theme.green : '#9ca3af'} />}
+              <span style={{ fontSize: 13, fontWeight: 600, color: usingCurrentLocation ? theme.green : '#6b7280' }}>
+                {locating ? 'Getting location...' : usingCurrentLocation ? 'Using current location ✓' : 'Use my current location'}
+              </span>
+            </button>
+            {locationError && (
+              <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
+                {locationError}
+              </div>
+            )}
+
+            {/* ── ORDER FOR A FRIEND (optional) ── */}
+            <button
+              type="button"
+              onClick={() => setForFriend((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                padding: '10px 14px', borderRadius: 10, marginBottom: forFriend ? 10 : 14, cursor: 'pointer',
+                border: `1px solid ${forFriend ? theme.green : '#e5e7eb'}`,
+                background: forFriend ? '#ecfdf5' : '#f9fafb',
+                fontFamily: 'inherit',
+              }}
+            >
+              <User size={16} color={forFriend ? theme.green : '#9ca3af'} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: forFriend ? theme.green : '#6b7280' }}>
+                {forFriend ? "Ordering for a friend ✓" : "This order is for someone else"}
+              </span>
+            </button>
+
+            {forFriend && (
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                <input
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="Friend's name"
+                  style={inputStyle}
+                />
+                <input
+                  value={recipientPhone}
+                  onChange={(e) => setRecipientPhone(e.target.value)}
+                  placeholder="Friend's phone"
+                  style={inputStyle}
+                />
+              </div>
+            )}
+
+            {/* ── PAYMENT METHOD ── */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Payment Method</div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <PayChip value="CASH" label="💵  Cash" selected={payment} onSelect={setPayment} theme={theme} />
+              <PayChip value="MOMO" label="📱  MoMo" selected={payment} onSelect={setPayment} theme={theme} />
+            </div>
+
             {submitError && (
-              <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 10, padding: '10px 14px', marginTop: 10, fontSize: 13 }}>
+              <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 10, padding: '10px 14px', marginBottom: 10, fontSize: 13 }}>
                 {submitError}
               </div>
             )}
             <button
               onClick={submitOrder}
-              disabled={!note.trim() || submitting}
+              disabled={!canSubmit}
               style={{
                 width: '100%', height: 50, border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, fontFamily: 'inherit',
-                background: note.trim() ? theme.green : '#d1d5db', color: '#fff', cursor: note.trim() ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14,
+                background: canSubmit ? theme.green : '#d1d5db', color: '#fff', cursor: canSubmit ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >
               {submitting
                 ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Submitting...</>
                 : <><Send size={16} /> Submit Order</>}
             </button>
+            {!hasDeliveryLocation && (
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 8, textAlign: 'center' }}>
+                Choose a delivery location to continue
+              </div>
+            )}
           </>
         )}
       </div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   LocationPicker — same pattern as the deliveries
+   page: search box + dropdown of saved locations,
+   collapses into a selected pill once chosen.
+════════════════════════════════════════════ */
+function LocationPicker({ hint, selected, locations, loading, accent, overrideLabel, onPick }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const displayLabel = overrideLabel ?? selected?.name;
+  const results = filterLocations(locations, query);
+
+  function pick(loc) {
+    onPick(loc);
+    setQuery('');
+    setOpen(false);
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      {displayLabel && !open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
+            padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+            border: `1.5px solid ${accent}`, background: `${accent}14`,
+          }}
+        >
+          <CheckCircle2 size={16} color={accent} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{displayLabel}</div>
+            {selected?.address && (
+              <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.address}</div>
+            )}
+          </div>
+        </button>
+      ) : (
+        <div style={{ position: 'relative' }}>
+          <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            placeholder={hint}
+            style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12, marginBottom: 0 }}
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+              <X size={15} color="#9ca3af" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
+          background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 260, overflowY: 'auto',
+        }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
+            </div>
+          ) : results.length === 0 ? (
+            <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
+          ) : (
+            results.map((loc, i) => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => pick(loc)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                  padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
+                }}
+              >
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MapPin size={16} color={accent} />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, icon, children }) {
+  return (
+    <div style={{ margin: '18px 0 10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>{icon}{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function PayChip({ value, label, selected, onSelect, theme }) {
+  const active = value === selected;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      style={{
+        padding: '10px 20px', borderRadius: 50, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+        border: `${active ? 1.5 : 1}px solid ${active ? theme.green : '#e5e7eb'}`,
+        background: active ? `${theme.green}1a` : '#f9fafb',
+        color: active ? theme.green : '#6b7280',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -248,3 +553,5 @@ function ProductSkeleton() {
     </div>
   );
 }
+
+const inputStyle = { width: '100%', height: 44, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box', marginBottom: 14 };

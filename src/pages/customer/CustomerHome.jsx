@@ -163,19 +163,19 @@ export default function CustomerHome() {
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
 
       {/* ── TOP BAR ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
+      <div style={{ background: '#1B5E3B', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
+          <div className='text-white' style={{
             width: 40, height: 40, borderRadius: '50%', background: `${theme.green}18`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: theme.green, flexShrink: 0,
           }}>{firstName[0]?.toUpperCase()}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#0f1117' }}>Hello, {firstName} 👋</div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>What would you like today?</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#ffff' }}>Hello, {firstName} 👋</div>
+            <div style={{ fontSize: 12, color: '#fff' }}>What would you like today?</div>
           </div>
-          <button onClick={() => navigate('/notifications')} style={iconBtnStyle}><Bell size={20} color="#0f1117" /></button>
+          <button onClick={() => navigate('/notifications')} style={iconBtnStyle}><Bell size={20} color="#fff" /></button>
           <button onClick={() => navigate('/cart')} style={{ ...iconBtnStyle, position: 'relative' }}>
-            <ShoppingBag size={20} color="#0f1117" />
+            <ShoppingBag size={20} color="#fff" />
             {totalItems > 0 && (
               <span style={{
                 position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%',

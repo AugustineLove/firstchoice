@@ -235,7 +235,7 @@ export default function LoginPage() {
 
           {/* REGISTER LINKS */}
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            <Link to="/register/vendor" style={{
+            {/* <Link to="/register/vendor" style={{
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
               height:46, border:`1.5px solid ${theme.border}`, borderRadius:10,
               color:'#374151', fontSize:14, fontWeight:600, textDecoration:'none',
@@ -256,7 +256,7 @@ export default function LoginPage() {
             onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = '#374151'; }}
             >
               🏍️ Register as a Rider
-            </Link>
+            </Link> */}
             <Link to="/register" style={{
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
               height:46, border:`1.5px solid ${theme.border}`, borderRadius:10,
@@ -266,7 +266,7 @@ export default function LoginPage() {
             onMouseEnter={e => { e.currentTarget.style.borderColor = theme.green; e.currentTarget.style.color = theme.green; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = theme.border; e.currentTarget.style.color = '#374151'; }}
             >
-              👤 Register as a Customer
+              👤 Create a new account
             </Link>
           </div>
         </div>
