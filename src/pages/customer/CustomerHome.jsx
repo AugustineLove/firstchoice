@@ -254,7 +254,7 @@ export default function CustomerHome() {
           <Truck size={110} color="rgba(255,255,255,0.12)" style={{ position: 'absolute', right: -10, bottom: -18, transform: 'rotate(-8deg)' }} />
           <h2 style={{ color: '#fff', fontSize: 17, fontWeight: 900, margin: 0, position: 'relative' }}>Need something picked up?</h2>
           <p className='text-left' style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: '8px 0 16px', maxWidth: 320, lineHeight: 1.5, position: 'relative' }}>
-            No shopping required — we'll grab and deliver any item for you. E.g. A document, a gift for a friend, anything, or any personal item from any address.
+            No need to shop. We can pick up and deliver any item for you. E.g. A document, a gift for a friend, anything, or any personal item from any address.
           </p>
           <button
             onClick={() => navigate('/deliveries')}
