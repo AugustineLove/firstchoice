@@ -163,127 +163,210 @@ export default function CustomerHome() {
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
 
       {/* ── TOP BAR ── */}
-      <div style={{ background: `#1B5E3B`, borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: '0 auto',
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-          }}
-        >
-          {/* Avatar */}
-          <div className='flex flex-col items-center justify-center'>
-              <div
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: '50%',
-              overflow: 'hidden',
-              background: '#ffffff22',
-              border: '2px solid #ffffff55',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            <img
-              src="/icons/logo.png"
-              alt={firstName}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-          </div>
-          <p className='text-white'>First Choice</p>
-          </div>
-
-
-          {/* Greeting */}
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 900,
-                fontSize: 20,
-                color: '#fff',
-                lineHeight: 1.2,
-                letterSpacing: '-0.3px',
-              }}
-            >
-              Hello, {firstName} 👋
-            </div>
-
-            <div
-              style={{
-                marginTop: 3,
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.8)',
-                fontWeight: 500,
-              }}
-            >
-              What would you like today?
-            </div>
-          </div>
-
-
-          {/* Notification Button */}
-          <button
-            onClick={() => navigate('/notifications')}
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.25)',
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(10px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all .2s ease',
-            }}
-          >
-            <Bell size={20} color="#fff" />
-          </button>
-        </div>
-
-        {/* ── SEARCH ── */}
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px 14px' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={17} color="#9ca3af" style={{ position: 'absolute', left: 14, top: 13 }} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={openSearch}
-              placeholder="Search vendors or products..."
-              className="shadow-sm"
-              style={{
-                width: '100%', height: 46, borderRadius: 14, border: '1px solid #e5e7eb', background: '#f8faf8',
-                paddingLeft: 40, paddingRight: query ? 36 : 14, fontFamily: 'inherit', fontSize: 14, boxSizing: 'border-box', outline: 'none',
-              }}
-            />
-            {query && (
-              <button
-                onClick={() => { setQuery(''); setSearchOpen(false); }}
-                style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
-              >
-                <X size={18} color="#9ca3af" />
-              </button>
-            )}
-          </div>
-        </div>
+      <div className="fc-topbar">
+  <div className="fc-topbar__row">
+    {/* Avatar + wordmark */}
+    <div className="fc-topbar__brand">
+      <div className="fc-topbar__avatar">
+        <span className="fc-topbar__avatar-ring" aria-hidden="true" />
+        <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
       </div>
+      <span className="fc-topbar__wordmark">First Choice</span>
+    </div>
+
+    {/* Greeting */}
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="fc-topbar__greeting">
+        Hello, {firstName} <span aria-hidden="true">👋</span>
+      </div>
+      <div className="fc-topbar__subtitle">What would you like today?</div>
+    </div>
+
+    {/* Notification button */}
+    <button
+      type="button"
+      onClick={() => navigate('/notifications')}
+      className="fc-topbar__notif"
+      aria-label="Notifications"
+    >
+      <Bell size={20} color="#fff" strokeWidth={2.25} />
+    </button>
+  </div>
+
+  {/* ── SEARCH ── */}
+  <div className="fc-topbar__search-wrap">
+    <div className="fc-topbar__search">
+      <Search size={17} color="#9ca3af" style={{ position: 'absolute', left: 14, top: 14 }} />
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={openSearch}
+        placeholder="Search vendors or products..."
+        className="fc-topbar__search-input"
+      />
+      {query && (
+        <button
+          onClick={() => { setQuery(''); setSearchOpen(false); }}
+          className="fc-topbar__search-clear"
+          aria-label="Clear search"
+        >
+          <X size={18} color="#9ca3af" />
+        </button>
+      )}
+    </div>
+  </div>
+
+  <style>{`
+    .fc-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+        linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+    .fc-topbar__row {
+      position: relative;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: clamp(14px, 3vw, 18px) clamp(16px, 4vw, 20px) 10px;
+      display: flex;
+      align-items: center;
+      gap: clamp(10px, 2.5vw, 14px);
+    }
+
+    .fc-topbar__brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .fc-topbar__avatar {
+      position: relative;
+      width: clamp(40px, 9vw, 46px);
+      height: clamp(40px, 9vw, 46px);
+    }
+
+    .fc-topbar__avatar-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.5);
+      animation: fc-pulse 2.4s ease-in-out infinite;
+    }
+
+    .fc-topbar__avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      background: rgba(255,255,255,0.14);
+      border: 2px solid rgba(255,255,255,0.35);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .fc-topbar__wordmark {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+    }
+
+    .fc-topbar__greeting {
+      font-weight: 900;
+      font-size: clamp(16px, 4vw, 20px);
+      color: #fff;
+      line-height: 1.2;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fc-topbar__subtitle {
+      margin-top: 3px;
+      font-size: clamp(12px, 2.6vw, 13px);
+      color: rgba(255,255,255,0.8);
+      font-weight: 500;
+    }
+
+    .fc-topbar__notif {
+      flex-shrink: 0;
+      width: clamp(38px, 8vw, 42px);
+      height: clamp(38px, 8vw, 42px);
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+    .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
+    .fc-topbar__notif:active { transform: scale(0.94); }
+    .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+    .fc-topbar__search-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 clamp(16px, 4vw, 20px) 16px;
+    }
+
+    .fc-topbar__search {
+      position: relative;
+    }
+
+    .fc-topbar__search-input {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: #fff;
+      padding-left: 40px;
+      padding-right: 14px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .fc-topbar__search-input:focus {
+      border-color: #1B5E3B;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
+    }
+
+    .fc-topbar__search-clear {
+      position: absolute;
+      right: 10px;
+      top: 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+    }
+
+    @keyframes fc-pulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 0; transform: scale(1.18); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fc-topbar__avatar-ring { animation: none; }
+    }
+  `}</style>
+</div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
 
