@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Package, Loader2, Bike, LocateFixed, Search, X, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Package, Loader2, Bike, LocateFixed, Search, X, CheckCircle2, Camera, ImagePlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
 
 const STATUS_STYLE = {
   PENDING: { color: '#92400e', bg: '#fef3c7' }, ACCEPTED: { color: '#065f46', bg: '#d1fae5' },
@@ -77,9 +78,18 @@ export default function DeliveriesPage() {
   const [locating, setLocating] = useState(false);
 
   const [description, setDescription] = useState('');
+  const [extraNote, setExtraNote] = useState('');
   const [payment, setPayment] = useState('CASH');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  // ── item photo (optional) ──
+  const fileInputRef = useRef(null);
+  const [imagePreview, setImagePreview] = useState(null); // local object URL, for display
+  const [imageUrl, setImageUrl] = useState(null);          // Cloudinary secure_url once uploaded
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageProgress, setImageProgress] = useState(0);
+  const [imageError, setImageError] = useState(null);
 
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -111,6 +121,9 @@ export default function DeliveriesPage() {
   useEffect(() => { loadLocations(); }, [loadLocations]);
   useEffect(() => { if (tab === 'history') loadHistory(); }, [tab, loadHistory]);
 
+  // Revoke the local object URL when it's replaced or the component unmounts
+  useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
+
   const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
   const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
   const destAddress = usingCurrentLocation && currentPosition
@@ -123,7 +136,7 @@ export default function DeliveriesPage() {
     [pickup, destLat, destLng]
   );
 
-  const canSubmit = pickup && (destination || usingCurrentLocation) && description.trim();
+  const canSubmit = pickup && (destination || usingCurrentLocation) && description.trim() && !imageUploading;
 
   function useCurrentLocation() {
     if (!('geolocation' in navigator)) {
@@ -147,6 +160,47 @@ export default function DeliveriesPage() {
     );
   }
 
+  // Mirrors the Flutter _pickImage flow: pick -> show local preview immediately
+  // -> upload to Cloudinary in the background -> swap in the secure_url.
+  async function onPickImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file later
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setImageError(validationError);
+      return;
+    }
+
+    setImageError(null);
+    setImageUrl(null);
+    setImagePreview(URL.createObjectURL(file));
+    setImageUploading(true);
+    setImageProgress(0);
+
+    const url = await uploadToCloudinary(file, {
+      folder: 'firstchoice/deliveries',
+      onProgress: setImageProgress,
+    });
+
+    setImageUploading(false);
+    if (url) {
+      setImageUrl(url);
+    } else {
+      setImageError('Upload failed — please try again.');
+    }
+  }
+
+  function removeImage() {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageUrl(null);
+    setImageUploading(false);
+    setImageProgress(0);
+    setImageError(null);
+  }
+
   async function submit() {
     if (!canSubmit) return;
     setSubmitting(true);
@@ -163,12 +217,14 @@ export default function DeliveriesPage() {
           pickupLongitude: pickup.longitude,
           destinationLatitude: destLat,
           destinationLongitude: destLng,
+          itemPhotoUrl: imageUrl || undefined,
         }),
       });
       const json = await res.json();
       if (json.success) {
         setPickup(null); setDestination(null); setDescription('');
         setUsingCurrentLocation(false); setCurrentPosition(null);
+        removeImage();
         setTab('history');
         loadHistory();
       } else setError(json.message || 'Could not book this delivery.');
@@ -199,7 +255,7 @@ export default function DeliveriesPage() {
 
             <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 14 }}>Pick from our saved locations for accurate GPS routing</div>
 
-            <Field label="Pickup Location" icon={<MapPin size={15} color="#10b981" />}>
+            <Field label="PICK UP LOCATION" icon={<MapPin size={15} color="#10b981" />}>
               <LocationPicker
                 hint="Search pickup point..."
                 selected={pickup}
@@ -210,7 +266,7 @@ export default function DeliveriesPage() {
               />
             </Field>
 
-            <Field label="Destination" icon={<MapPin size={15} color="#ef4444" />}>
+            <Field label="DESTINATION" icon={<MapPin size={15} color="#ef4444" />}>
               <LocationPicker
                 hint="Search destination..."
                 selected={destination}
@@ -241,8 +297,67 @@ export default function DeliveriesPage() {
               </span>
             </button>
 
-            <Field label="What are we delivering?" icon={<Package size={15} color="#8b5cf6" />}>
+            <Field label="ITEM DESCRIPTION?" icon={<Package size={15} color="#8b5cf6" />}>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. Documents, a small package..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
+            </Field>
+
+              <Field label="ADDITIONAL NOTES?" icon={<Package size={15} color="#8b5cf6" />}>
+              <textarea value={description} onChange={(e) => setExtraNote(e.target.value)} rows={2} placeholder="e.g. Any special instructions for driver..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
+            </Field>
+
+            <Field label="PHOTO OF THE ITEM (OPTIONAL)" icon={<Camera size={15} color="#f97316" />}>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={onPickImage} style={{ display: 'none' }} />
+
+              {!imagePreview ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                    border: '1px dashed #d1d5db', background: '#f9fafb',
+                  }}
+                >
+                  <ImagePlus size={16} color="#9ca3af" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Add a photo — helps the rider identify it</span>
+                </button>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12, border: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 10, flexShrink: 0, overflow: 'hidden',
+                    background: `url(${imagePreview}) center/cover`, position: 'relative',
+                  }}>
+                    {imageUploading && (
+                      <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Loader2 size={18} color="#fff" style={{ animation: 'spin 1s linear infinite' }} />
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {imageUploading ? (
+                      <>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>Uploading... {Math.round(imageProgress * 100)}%</div>
+                        <div style={{ height: 5, borderRadius: 3, background: '#e5e7eb', marginTop: 6, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${imageProgress * 100}%`, background: '#f97316', transition: 'width 0.15s' }} />
+                        </div>
+                      </>
+                    ) : imageUrl ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#10b981' }}>
+                        <CheckCircle2 size={14} /> Photo attached
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 13, color: '#dc2626', fontWeight: 600 }}>Upload failed</div>
+                    )}
+                  </div>
+                  <button type="button" onClick={removeImage} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 4 }}>
+                    <X size={16} color="#9ca3af" />
+                  </button>
+                </div>
+              )}
+              {imageError && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>{imageError}</div>}
             </Field>
 
             <div style={{

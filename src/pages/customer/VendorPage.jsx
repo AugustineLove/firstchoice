@@ -1,11 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, MapPin, Clock, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Star, MapPin, Clock, Loader2, Send, CheckCircle2, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { useCart } from '../../context/CartContext';
-import ProductModal from '../public/ProductModal';
 
 const TYPE_STYLE = {
   food:        { emoji: '🍛', a: '#10B981', b: '#34D399' },
@@ -15,18 +13,27 @@ const TYPE_STYLE = {
   electronics: { emoji: '📱', a: '#6366F1', b: '#818CF8' },
 };
 
+// NOTE ON THE FLOW BELOW: this replaces the old add-to-cart-per-product flow.
+// Products are shown for browsing/reference only — tapping one drops a line
+// into the order note as a shortcut. The actual order is a single free-text
+// request, submitted to POST /orders. Adjust the endpoint/payload shape to
+// match whatever the backend actually expects.
+
 export default function VendorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { authFetch } = useAuth();
   const { theme } = useTheme();
-  const { totalItems, total } = useCart();
 
   const [vendor, setVendor]     = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
-  const [activeProduct, setActiveProduct] = useState(null);
+
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,11 +56,44 @@ export default function VendorPage() {
 
   const style = TYPE_STYLE[vendor?.businessType?.toLowerCase()] || { emoji: '🏪', a: '#10B981', b: '#34D399' };
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: totalItems ? 96 : 32 }}>
+  function addProductToNote(product) {
+    setNote((prev) => {
+      const line = `1x ${product.name} (GHS ${product.price?.toFixed(2)})`;
+      if (!prev.trim()) return line;
+      return `${prev.trim()}\n${line}`;
+    });
+  }
 
-      {/* ── HERO ── */}
-      <div style={{ height: 200, position: 'relative', background: vendor?.logo ? `url(${vendor.logo}) center/cover` : `linear-gradient(135deg, ${style.a}, ${style.b})` }}>
+  async function submitOrder() {
+    if (!note.trim() || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await authFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          vendorId: id,
+          note: note.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSubmitted(true);
+        setNote('');
+      } else {
+        setSubmitError(json.message || 'Could not submit your order.');
+      }
+    } catch {
+      setSubmitError('Could not reach the server.');
+    }
+    setSubmitting(false);
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 40 }}>
+
+      {/* ── PROFILE HEADER ── */}
+      <div style={{ height: 190, position: 'relative', background: vendor?.logo ? `url(${vendor.logo}) center/cover` : `linear-gradient(135deg, ${style.a}, ${style.b})` }}>
         <button onClick={() => navigate(-1)} style={{
           position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: '50%',
           background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -64,7 +104,7 @@ export default function VendorPage() {
         )}
       </div>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 20px' }}>
 
         {/* ── VENDOR INFO ── */}
         {loading ? (
@@ -97,11 +137,15 @@ export default function VendorPage() {
                 </span>
               )}
             </div>
+            {vendor.description && (
+              <p style={{ fontSize: 13, color: '#6b7280', marginTop: 10, lineHeight: 1.5 }}>{vendor.description}</p>
+            )}
           </div>
         )}
 
-        {/* ── MENU ── */}
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '20px 0 14px' }}>Menu</h2>
+        {/* ── PRODUCTS (reference only — tap to drop into the order note) ── */}
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '20px 0 6px' }}>Available Products</h2>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>Tap an item to add it to your order note below</p>
 
         {loading && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
@@ -114,34 +158,61 @@ export default function VendorPage() {
         )}
 
         {!loading && products.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 8 }}>
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} onClick={() => setActiveProduct(p)} />
+              <ProductCard key={p.id} product={p} onClick={() => addProductToNote(p)} />
             ))}
           </div>
         )}
-      </div>
 
-      {activeProduct && (
-        <ProductModal product={activeProduct} onClose={() => setActiveProduct(null)} />
-      )}
+        {/* ── ORDER NOTE + SUBMIT ── */}
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '28px 0 10px' }}>What would you like to order?</h2>
 
-      {/* ── CART BAR ── */}
-      {totalItems > 0 && (
-        <div onClick={() => navigate('/cart')} style={{
-          position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 20, width: 'min(560px, calc(100% - 32px))',
-          background: theme.green, borderRadius: 16, height: 58, display: 'flex', alignItems: 'center', padding: '0 20px',
-          boxShadow: `0 8px 20px ${theme.green}4d`, cursor: 'pointer',
-        }}>
+        {submitted ? (
           <div style={{
-            width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 900,
-          }}>{totalItems}</div>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginLeft: 12 }}>View Cart</span>
-          <span style={{ flex: 1 }} />
-          <span style={{ color: '#fff', fontWeight: 900, fontSize: 15 }}>GHS {total.toFixed(2)}</span>
-        </div>
-      )}
+            display: 'flex', alignItems: 'center', gap: 10, background: '#ecfdf5', border: `1px solid ${theme.green}`,
+            borderRadius: 14, padding: '16px 18px', marginBottom: 20,
+          }}>
+            <CheckCircle2 size={22} color={theme.green} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: '#0f1117' }}>Order sent to {vendor?.businessName}</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>They'll confirm the details and total shortly.</div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={6}
+              placeholder="List everything you'd like, e.g.&#10;2x Jollof rice (large)&#10;1x Bottled water&#10;No pepper please"
+              style={{
+                width: '100%', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, fontFamily: 'inherit',
+                fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',
+              }}
+            />
+            {submitError && (
+              <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 10, padding: '10px 14px', marginTop: 10, fontSize: 13 }}>
+                {submitError}
+              </div>
+            )}
+            <button
+              onClick={submitOrder}
+              disabled={!note.trim() || submitting}
+              style={{
+                width: '100%', height: 50, border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, fontFamily: 'inherit',
+                background: note.trim() ? theme.green : '#d1d5db', color: '#fff', cursor: note.trim() ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14,
+              }}
+            >
+              {submitting
+                ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Submitting...</>
+                : <><Send size={16} /> Submit Order</>}
+            </button>
+          </>
+        )}
+      </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
