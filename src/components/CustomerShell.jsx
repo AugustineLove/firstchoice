@@ -37,11 +37,11 @@ export default function CustomerShell() {
             const active = i === activeIndex;
             return (
               <button key={tab.path} onClick={() => navigate(tab.path)} style={{
-                flex: 1, background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0 8px',
+                flex: 1, background: '#1B5E3B', border: 'none', cursor: 'pointer', padding: '10px 0 8px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, fontFamily: "'DM Sans', system-ui, sans-serif",
               }}>
-                <Icon size={22} color={active ? theme.green : '#9ca3af'} fill={active ? theme.green : 'none'} strokeWidth={active ? 0 : 1.8} />
-                <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? theme.green : '#9ca3af' }}>{tab.label}</span>
+                <Icon size={22} color={active ? theme.green : '#fff'} fill={active ? '#5ced73' : 'none'} strokeWidth={active ? 0 : 1.8} />
+                <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? '#5ced73' : '#fff' }}>{tab.label}</span>
               </button>
             );
           })}

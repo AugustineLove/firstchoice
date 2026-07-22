@@ -167,14 +167,14 @@ export default function CustomerHome() {
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className='text-white' style={{
             width: 40, height: 40, borderRadius: '50%', background: `${theme.green}18`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: theme.green, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#fff', flexShrink: 0,
           }}>{firstName[0]?.toUpperCase()}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#ffff' }}>Hello, {firstName} 👋</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: '#ffff' }}>Hello, {firstName} 👋</div>
             <div style={{ fontSize: 12, color: '#fff' }}>What would you like today?</div>
           </div>
           <button onClick={() => navigate('/notifications')} style={iconBtnStyle}><Bell size={20} color="#fff" /></button>
-          <button onClick={() => navigate('/cart')} style={{ ...iconBtnStyle, position: 'relative' }}>
+          {/* <button onClick={() => navigate('/cart')} style={{ ...iconBtnStyle, position: 'relative' }}>
             <ShoppingBag size={20} color="#fff" />
             {totalItems > 0 && (
               <span style={{
@@ -183,7 +183,7 @@ export default function CustomerHome() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{totalItems}</span>
             )}
-          </button>
+          </button> */}
         </div>
 
         {/* ── SEARCH ── */}
@@ -216,7 +216,7 @@ export default function CustomerHome() {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
 
         {/* ── CATEGORIES ── */}
-        <h3 className="text-left" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', color: '#9ca3af', margin: '24px 0 12px' }}>
+        <h3 className="text-left" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', color: '#000', margin: '24px 0 12px' }}>
           SHOP BY CATEGORY
         </h3>
         <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
