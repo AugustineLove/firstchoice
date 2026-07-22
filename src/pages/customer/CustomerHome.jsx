@@ -250,7 +250,7 @@ export default function CustomerHome() {
   width: clamp(40px, 9vw, 46px);
   height: clamp(40px, 9vw, 46px);
   border-radius: 50%;
-  background: #fff;
+  // background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
