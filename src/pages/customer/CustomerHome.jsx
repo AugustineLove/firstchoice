@@ -163,7 +163,7 @@ export default function CustomerHome() {
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
 
       {/* ── TOP BAR ── */}
-      <div style={{ background: '#1B5E3B', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
+      <div style={{ background: `linear-gradient(135deg, ${theme.green}, #0d9488)`, borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 20 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className='text-white' style={{
             width: 40, height: 40, borderRadius: '50%', background: `${theme.green}18`,

@@ -28,7 +28,7 @@ export default function CustomerShell() {
       <Outlet />
       {showBar && (
         <nav style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff',
+          position: 'fixed', bottom: 0, left: 0, right: 0, background: `linear-gradient(135deg, ${theme.green}, #0d9488)`,
           borderTop: '1px solid #f0f0f0', display: 'flex', zIndex: 50,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}>
@@ -37,7 +37,7 @@ export default function CustomerShell() {
             const active = i === activeIndex;
             return (
               <button key={tab.path} onClick={() => navigate(tab.path)} style={{
-                flex: 1, background: '#1B5E3B', border: 'none', cursor: 'pointer', padding: '10px 0 8px',
+                flex: 1, background: '#0d9488', border: 'none', cursor: 'pointer', padding: '10px 0 8px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, fontFamily: "'DM Sans', system-ui, sans-serif",
               }}>
                 <Icon size={22} color={active ? theme.green : '#fff'} fill={active ? '#5ced73' : 'none'} strokeWidth={active ? 0 : 1.8} />
