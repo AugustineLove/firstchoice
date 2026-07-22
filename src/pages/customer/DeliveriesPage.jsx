@@ -297,12 +297,15 @@ export default function DeliveriesPage() {
               </span>
             </button>
 
-            <Field label="ITEM DESCRIPTION?" icon={<Package size={15} color="#8b5cf6" />}>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. Documents, a small package..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
+            <Field label="ITEM DESCRIPTION" icon={<Package size={15} color="#8b5cf6" />}>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. Documents, a small package..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none',
+              width: '100%', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, fontFamily: 'inherit',
+                fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',
+              }} />
             </Field>
 
               <Field label="ADDITIONAL NOTES?" icon={<Package size={15} color="#8b5cf6" />}>
-              <textarea value={description} onChange={(e) => setExtraNote(e.target.value)} rows={2} placeholder="e.g. Any special instructions for driver..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
+              <textarea value={description} onChange={(e) => setExtraNote(e.target.value)} rows={2} placeholder="e.g. Any special information for driver..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
             </Field>
 
             <Field label="PHOTO OF THE ITEM (OPTIONAL)" icon={<Camera size={15} color="#f97316" />}>
