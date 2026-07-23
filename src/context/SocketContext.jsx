@@ -13,7 +13,7 @@ import { useAuth } from './AuthContext';
   set it via env so it's easy to point at local/staging/prod.
 */
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5050';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://firstchoice-backend.onrender.com';
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
