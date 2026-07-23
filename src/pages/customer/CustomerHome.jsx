@@ -318,19 +318,31 @@ export default function CustomerHome() {
     /* three fading dots — a quiet motion trail behind the mark,
        reads as "moving fast" without needing an icon */
     .fc-topbar__wordmark-trail {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .fc-topbar__wordmark-trail span {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #f6c453;
-    }
-    .fc-topbar__wordmark-trail span:nth-child(1) { opacity: 0.9; }
-    .fc-topbar__wordmark-trail span:nth-child(2) { opacity: 0.55; }
-    .fc-topbar__wordmark-trail span:nth-child(3) { opacity: 0.25; }
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.fc-topbar__wordmark-trail span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f6c453;
+  animation: fc-dot-load 1.1s ease-in-out infinite;
+}
+
+.fc-topbar__wordmark-trail span:nth-child(1) { animation-delay: 0s; }
+.fc-topbar__wordmark-trail span:nth-child(2) { animation-delay: 0.15s; }
+.fc-topbar__wordmark-trail span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fc-dot-load {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.7); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-topbar__wordmark-trail span { animation: none; opacity: 0.6; }
+}
 
     .fc-topbar__notif {
       flex-shrink: 0;
