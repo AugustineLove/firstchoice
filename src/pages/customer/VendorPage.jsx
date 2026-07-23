@@ -43,6 +43,9 @@ export default function VendorPage() {
   const [note, setNote] = useState('');
 
   // ── delivery location (compulsory) ──
+  // Loaded quietly in the background on mount — this is just data-fetching,
+  // it never touches focus/the keyboard. Only the picker UI itself opens
+  // on tap; see LocationPicker below for the actual fix.
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [destination, setDestination] = useState(null); // saved location | null
@@ -62,6 +65,7 @@ export default function VendorPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const submittingRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -138,7 +142,8 @@ export default function VendorPage() {
   const canSubmit = note.trim() && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
 
   async function submitOrder() {
-    if (!canSubmit) return;
+    if (!canSubmit || submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -173,61 +178,53 @@ export default function VendorPage() {
     } catch {
       setSubmitError('Could not reach the server.');
     }
+    submittingRef.current = false;
     setSubmitting(false);
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 40 }}>
 
-      {/* ── PROFILE HEADER ── */}
-      <div style={{ height: 190, position: 'relative', background: vendor?.logo ? `url(${vendor.logo}) center/cover` : `linear-gradient(135deg, ${style.a}, ${style.b})` }}>
-        <button onClick={() => navigate(-1)} style={{
-          position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: '50%',
-          background: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        }}><ArrowLeft size={18} color="#0f1117" /></button>
+      {/* ── HERO ── */}
+      <div className="vp-hero" style={{
+        background: vendor?.logo ? `url(${vendor.logo}) center/cover` : `linear-gradient(135deg, ${style.a}, ${style.b})`,
+      }}>
+        <div className="vp-hero__scrim" />
+
+        <button onClick={() => navigate(-1)} className="vp-hero__back">
+          <ArrowLeft size={18} color="#0f1117" />
+        </button>
+
         {!vendor?.logo && !loading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 52 }}>{style.emoji}</div>
+          <div className="vp-hero__emoji">{style.emoji}</div>
         )}
+
+        {vendor && !loading && (
+          <div className="vp-hero__content">
+            <div className="vp-hero__toprow">
+              <span className="vp-hero__type">{vendor.businessType}</span>
+              <span className="vp-hero__rating">
+                <Star size={13} fill="#f59e0b" color="#f59e0b" />
+                {(vendor.rating ?? 0).toFixed(1)}
+              </span>
+            </div>
+            <h1 className="vp-hero__name">{vendor.businessName}</h1>
+            <div className="vp-hero__meta">
+              {vendor.address && <span><MapPin size={12} />{vendor.address}</span>}
+              {vendor.openingHours && <span><Clock size={12} />{vendor.openingHours}</span>}
+            </div>
+          </div>
+        )}
+
+        {loading && <div className="vp-hero__skeleton" />}
       </div>
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: '0 20px' }}>
 
-        {/* ── VENDOR INFO ── */}
-        {loading ? (
-          <div style={{ padding: '18px 0' }}>
-            <div style={{ height: 22, width: 220, background: '#f3f4f6', borderRadius: 6 }} />
-          </div>
-        ) : error ? (
-          <p style={{ color: '#dc2626', padding: '18px 0' }}>{error}</p>
-        ) : vendor && (
-          <div style={{ padding: '18px 0', borderBottom: '1px solid #f0f0f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 900, color: '#0f1117', margin: 0 }}>{vendor.businessName}</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fef3c7', padding: '5px 10px', borderRadius: 50, flexShrink: 0 }}>
-                <Star size={14} fill="#f59e0b" color="#f59e0b" />
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#0f1117' }}>{(vendor.rating ?? 0).toFixed(1)}</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: theme.green, background: `${theme.green}18`, padding: '4px 10px', borderRadius: 50 }}>
-                {vendor.businessType}
-              </span>
-              {vendor.address && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6b7280' }}>
-                  <MapPin size={13} />{vendor.address}
-                </span>
-              )}
-              {vendor.openingHours && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#6b7280' }}>
-                  <Clock size={13} />{vendor.openingHours}
-                </span>
-              )}
-            </div>
-            {vendor.description && (
-              <p style={{ fontSize: 13, color: '#6b7280', marginTop: 10, lineHeight: 1.5 }}>{vendor.description}</p>
-            )}
-          </div>
+        {error && <p style={{ color: '#dc2626', padding: '18px 0' }}>{error}</p>}
+
+        {vendor?.description && (
+          <p style={{ fontSize: 13, color: '#6b7280', margin: '14px 0 0', lineHeight: 1.5 }}>{vendor.description}</p>
         )}
 
         {/* ── PRODUCTS (reference only — tap to drop into the order note) ── */}
@@ -235,8 +232,8 @@ export default function VendorPage() {
         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>Tap an item to add it to your order note below</p>
 
         {loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-            {Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
+          <div className="vp-product-grid">
+            {Array.from({ length: 6 }).map((_, i) => <ProductSkeleton key={i} />)}
           </div>
         )}
 
@@ -245,7 +242,7 @@ export default function VendorPage() {
         )}
 
         {!loading && products.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 8 }}>
+          <div className="vp-product-grid" style={{ marginBottom: 8 }}>
             {products.map((p) => (
               <ProductCard key={p.id} product={p} onClick={() => addProductToNote(p)} />
             ))}
@@ -384,15 +381,182 @@ export default function VendorPage() {
           </>
         )}
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── HERO ── */
+        .vp-hero {
+          position: relative;
+          height: clamp(210px, 32vw, 250px);
+          overflow: hidden;
+        }
+        .vp-hero__scrim {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 45%, rgba(0,0,0,0.78) 100%);
+        }
+        .vp-hero__back {
+          position: absolute;
+          top: 16px;
+          left: 16px;
+          z-index: 2;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: #fff;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .vp-hero__emoji {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 58px;
+          z-index: 1;
+        }
+        .vp-hero__content {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 2;
+          padding: 16px 20px;
+          max-width: 700px;
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+        .vp-hero__toprow {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+        .vp-hero__type {
+          font-size: 11px;
+          font-weight: 700;
+          color: #fff;
+          background: rgba(255,255,255,0.18);
+          border: 1px solid rgba(255,255,255,0.3);
+          backdrop-filter: blur(6px);
+          padding: 3px 10px;
+          border-radius: 50px;
+          text-transform: capitalize;
+        }
+        .vp-hero__rating {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          font-weight: 800;
+          color: #fff;
+          background: rgba(255,255,255,0.18);
+          border: 1px solid rgba(255,255,255,0.3);
+          backdrop-filter: blur(6px);
+          padding: 3px 9px;
+          border-radius: 50px;
+        }
+        .vp-hero__name {
+          font-size: clamp(22px, 5.5vw, 27px);
+          font-weight: 900;
+          color: #fff;
+          margin: 0 0 6px;
+          letter-spacing: -0.4px;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+          line-height: 1.1;
+        }
+        .vp-hero__meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .vp-hero__meta span {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.88);
+        }
+        .vp-hero__skeleton {
+          position: absolute;
+          left: 20px;
+          bottom: 20px;
+          width: 200px;
+          height: 20px;
+          background: rgba(255,255,255,0.25);
+          border-radius: 6px;
+        }
+
+        /* ── PRODUCT GRID — thin, dense, works with or without images ── */
+        .vp-product-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+          gap: 8px;
+        }
+        .vp-product-card {
+          background: #fff;
+          border-radius: 12px;
+          border: 1px solid #f0f0f0;
+          overflow: hidden;
+          cursor: pointer;
+          transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .vp-product-card:active {
+          transform: scale(0.96);
+        }
+        .vp-product-card__img {
+          height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          background: #ecfdf5;
+        }
+        .vp-product-card__body {
+          padding: 7px 8px 8px;
+        }
+        .vp-product-card__name {
+          font-size: 11.5px;
+          font-weight: 700;
+          color: #0f1117;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          line-height: 1.3;
+        }
+        .vp-product-card__price {
+          font-size: 11.5px;
+          font-weight: 800;
+          color: #10b981;
+          margin-top: 2px;
+        }
+      `}</style>
     </div>
   );
 }
 
 /* ════════════════════════════════════════════
-   LocationPicker — same pattern as the deliveries
-   page: search box + dropdown of saved locations,
-   collapses into a selected pill once chosen.
+   LocationPicker — three real states now, not two:
+
+   1. closed + nothing selected  → a plain BUTTON (no <input> in
+      the DOM at all). This is what fixed the auto-keyboard bug:
+      before, "no selection yet" and "open" were the same branch,
+      so an <input autoFocus> was mounted the instant the page
+      loaded, and mobile browsers pop the keyboard for any
+      autoFocus input the moment it mounts — even with no user
+      interaction. Now nothing keyboard-triggering exists until
+      the button is tapped.
+   2. closed + selected           → collapsed pill (unchanged).
+   3. open (only ever reached via a tap) → the real <input
+      autoFocus>, which is exactly when autofocus is supposed to
+      fire — right after a deliberate tap, not on page load.
 ════════════════════════════════════════════ */
 function LocationPicker({ hint, selected, locations, loading, accent, overrideLabel, onPick }) {
   const [open, setOpen] = useState(false);
@@ -416,81 +580,85 @@ function LocationPicker({ hint, selected, locations, loading, accent, overrideLa
     setOpen(false);
   }
 
-  return (
-    <div ref={wrapRef} style={{ position: 'relative' }}>
-      {displayLabel && !open ? (
+  if (!open) {
+    return (
+      <div ref={wrapRef} style={{ position: 'relative' }}>
         <button
           type="button"
           onClick={() => setOpen(true)}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
             padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-            border: `1.5px solid ${accent}`, background: `${accent}14`,
+            border: displayLabel ? `1.5px solid ${accent}` : '1px solid #e5e7eb',
+            background: displayLabel ? `${accent}14` : '#f9fafb',
           }}
         >
-          <CheckCircle2 size={16} color={accent} />
+          {displayLabel ? <CheckCircle2 size={16} color={accent} /> : <Search size={16} color="#9ca3af" />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{displayLabel}</div>
+            <div style={{ fontSize: 13, fontWeight: displayLabel ? 700 : 500, color: displayLabel ? '#111827' : '#9ca3af' }}>
+              {displayLabel || hint}
+            </div>
             {selected?.address && (
               <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.address}</div>
             )}
           </div>
         </button>
-      ) : (
-        <div style={{ position: 'relative' }}>
-          <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setOpen(true)}
-            placeholder={hint}
-            style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12, marginBottom: 0 }}
-          />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-              <X size={15} color="#9ca3af" />
-            </button>
-          )}
-        </div>
-      )}
+      </div>
+    );
+  }
 
-      {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
-          background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 260, overflowY: 'auto',
-        }}>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
-            </div>
-          ) : results.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
-          ) : (
-            results.map((loc, i) => (
-              <button
-                key={loc.id}
-                type="button"
-                onClick={() => pick(loc)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                  padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                  borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
-                }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MapPin size={16} color={accent} />
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={hint}
+          style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12, marginBottom: 0 }}
+        />
+        {query && (
+          <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+            <X size={15} color="#9ca3af" />
+          </button>
+        )}
+      </div>
+
+      <div style={{
+        position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
+        background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 260, overflowY: 'auto',
+      }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
+          </div>
+        ) : results.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
+        ) : (
+          results.map((loc, i) => (
+            <button
+              key={loc.id}
+              type="button"
+              onClick={() => pick(loc)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
+              }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <MapPin size={16} color={accent} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
+                <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -525,16 +693,13 @@ function PayChip({ value, label, selected, onSelect, theme }) {
 function ProductCard({ product, onClick }) {
   const emoji = { food: '🍛', grocery: '🛒', pharmacy: '💊', boutique: '👗', electronics: '📱', drinks: '🥤' }[product.category?.toLowerCase()] || '📦';
   return (
-    <div onClick={onClick} style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', overflow: 'hidden', cursor: 'pointer' }}>
-      <div style={{
-        height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34,
-        background: product.images?.[0] ? `url(${product.images[0]}) center/cover` : '#ecfdf5',
-      }}>
+    <div onClick={onClick} className="vp-product-card">
+      <div className="vp-product-card__img" style={product.images?.[0] ? { background: `url(${product.images[0]}) center/cover` } : undefined}>
         {!product.images?.[0] && emoji}
       </div>
-      <div style={{ padding: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1117', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#10b981', marginTop: 4 }}>
+      <div className="vp-product-card__body">
+        <div className="vp-product-card__name">{product.name}</div>
+        <div className="vp-product-card__price">
           {product.variantGroups?.some(g => g.required) ? 'from ' : ''}GHS {product.price?.toFixed(2)}
         </div>
       </div>
@@ -544,11 +709,11 @@ function ProductCard({ product, onClick }) {
 
 function ProductSkeleton() {
   return (
-    <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
-      <div style={{ height: 110, background: '#f3f4f6' }} />
-      <div style={{ padding: 10 }}>
-        <div style={{ height: 12, width: '80%', background: '#f3f4f6', borderRadius: 6 }} />
-        <div style={{ height: 12, width: '40%', background: '#f3f4f6', borderRadius: 6, marginTop: 8 }} />
+    <div className="vp-product-card">
+      <div className="vp-product-card__img" style={{ background: '#f3f4f6' }} />
+      <div className="vp-product-card__body">
+        <div style={{ height: 10, width: '80%', background: '#f3f4f6', borderRadius: 5 }} />
+        <div style={{ height: 10, width: '45%', background: '#f3f4f6', borderRadius: 5, marginTop: 6 }} />
       </div>
     </div>
   );
