@@ -17,7 +17,7 @@ const STATUS_STYLE = {
    mobile app (deliveries_screen.dart) — keep the
    two in sync if the pricing table changes.
 ════════════════════════════════════════════ */
-function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
+export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
   if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
 
   const r = 6371;

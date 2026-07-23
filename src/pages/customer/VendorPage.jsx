@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { calculateDeliveryEstimate } from './DeliveriesPage';
 
 const TYPE_STYLE = {
   food:        { emoji: '🍛', a: '#10B981', b: '#34D399' },
@@ -67,6 +68,7 @@ export default function VendorPage() {
   const [submitted, setSubmitted] = useState(false);
   const submittingRef = useRef(false);
 
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -115,6 +117,8 @@ export default function VendorPage() {
       return `${prev.trim()}\n${line}`;
     });
   }
+
+  console.log(`Vendor: ${vendor}`)
 
   function useCurrentLocation() {
     if (!('geolocation' in navigator)) {
@@ -238,7 +242,7 @@ export default function VendorPage() {
         )}
 
         {!loading && !error && products.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0' }}>No products available</p>
+          <p style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0' }}>We're working hard to add products for easier shopping. In the meantime, simply type what you'd like us to get for you below, and we'll take care of the rest.</p>
         )}
 
         {!loading && products.length > 0 && (
@@ -347,6 +351,23 @@ export default function VendorPage() {
                 />
               </div>
             )}
+
+             <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 14,
+              border: `1px solid ${theme.green}`, borderRadius: 10, background: '#f9fafb',
+            }}>
+              <span style={{ fontSize: 13, color: '#374151' }}>Delivery Fee:</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>GHS {calculateDeliveryEstimate({
+              pickupLat: vendor?.latitude,
+              pickupLng: vendor?.longitude,
+              destinationLat: usingCurrentLocation
+                  ? currentPosition?.latitude
+                  : destination?.latitude,
+              destinationLng: usingCurrentLocation
+                  ? currentPosition?.longitude
+                  : destination?.longitude,
+            })}.00</span>
+            </div>
 
             {/* ── PAYMENT METHOD ── */}
             <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Payment Method</div>

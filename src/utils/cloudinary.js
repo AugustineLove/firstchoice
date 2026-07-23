@@ -1,21 +1,8 @@
-// utils/cloudinary.js
-//
-// Web equivalent of the Flutter CloudinaryService — unsigned upload straight
-// from the browser to Cloudinary, no backend round-trip needed.
-//
-// Uses the same cloud name / unsigned preset as the Flutter apps
-// (`firstchoice_unsigned`, see AppConstants.cloudinaryCloudName). Swap the
-// two constants below for real values (env vars) before shipping.
 
 const CLOUDINARY_CLOUD_NAME = import.meta?.env?.VITE_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME';
 const CLOUDINARY_UPLOAD_PRESET = import.meta?.env?.VITE_CLOUDINARY_UPLOAD_PRESET || 'firstchoice_unsigned';
 
-console.log(CLOUDINARY_CLOUD_NAME)
 /**
- * Upload a File/Blob to Cloudinary using an unsigned preset.
- * Mirrors CloudinaryService.uploadFile — same folder convention, same
- * "return the secure_url or null" contract, plus an onProgress callback
- * (XHR gives us real upload progress, which plain fetch doesn't).
  *
  * @param {File} file
  * @param {{ folder?: string, onProgress?: (pct: number) => void }} opts
