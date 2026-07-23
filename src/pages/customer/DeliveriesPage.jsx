@@ -20,7 +20,7 @@ const STATUS_STYLE = {
 function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
   if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
 
-  const r = 6371; // Earth's radius in km
+  const r = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
 
   const dLat = toRad(destLat - pickupLat);
@@ -65,28 +65,34 @@ export default function DeliveriesPage() {
 
   const [tab, setTab] = useState('book'); // 'book' | 'history'
 
-  // Saved locations (loaded once, same source as the mobile "getLocations" endpoint)
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
   const [locationsError, setLocationsError] = useState(null);
 
-  const [pickup, setPickup] = useState(null);       // SavedLocation | null
-  const [destination, setDestination] = useState(null); // SavedLocation | null
+  const [pickup, setPickup] = useState(null);
+  const [destination, setDestination] = useState(null);
 
-  const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState(null); // { latitude, longitude }
-  const [locating, setLocating] = useState(false);
+  // ── current-location support for BOTH fields now ──
+  const [pickupUsingCurrent, setPickupUsingCurrent] = useState(false);
+  const [pickupCurrentPos, setPickupCurrentPos] = useState(null);
+  const [pickupLocating, setPickupLocating] = useState(false);
+  const [pickupLocationError, setPickupLocationError] = useState(null);
+
+  const [destUsingCurrent, setDestUsingCurrent] = useState(false);
+  const [destCurrentPos, setDestCurrentPos] = useState(null);
+  const [destLocating, setDestLocating] = useState(false);
+  const [destLocationError, setDestLocationError] = useState(null);
 
   const [description, setDescription] = useState('');
   const [extraNote, setExtraNote] = useState('');
   const [payment, setPayment] = useState('CASH');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const submittingRef = useRef(false);
 
-  // ── item photo (optional) ──
   const fileInputRef = useRef(null);
-  const [imagePreview, setImagePreview] = useState(null); // local object URL, for display
-  const [imageUrl, setImageUrl] = useState(null);          // Cloudinary secure_url once uploaded
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageProgress, setImageProgress] = useState(0);
   const [imageError, setImageError] = useState(null);
@@ -98,7 +104,7 @@ export default function DeliveriesPage() {
     setLoadingLocations(true);
     setLocationsError(null);
     try {
-      const res = await authFetch('/locations'); // adjust to your saved-locations endpoint if different
+      const res = await authFetch('/locations');
       const json = await res.json();
       if (json.success) setLocations(json.data.locations ?? json.data);
       else setLocationsError(json.message || 'Could not load locations.');
@@ -121,24 +127,31 @@ export default function DeliveriesPage() {
   useEffect(() => { loadLocations(); }, [loadLocations]);
   useEffect(() => { if (tab === 'history') loadHistory(); }, [tab, loadHistory]);
 
-  // Revoke the local object URL when it's replaced or the component unmounts
   useEffect(() => () => { if (imagePreview) URL.revokeObjectURL(imagePreview); }, [imagePreview]);
 
-  const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
-  const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
-  const destAddress = usingCurrentLocation && currentPosition
-    ? `GPS: ${currentPosition.latitude.toFixed(5)}, ${currentPosition.longitude.toFixed(5)}`
+  const pickupLat = pickupUsingCurrent ? pickupCurrentPos?.latitude : pickup?.latitude;
+  const pickupLng = pickupUsingCurrent ? pickupCurrentPos?.longitude : pickup?.longitude;
+  const pickupAddress = pickupUsingCurrent && pickupCurrentPos
+    ? `GPS: ${pickupCurrentPos.latitude.toFixed(5)}, ${pickupCurrentPos.longitude.toFixed(5)}`
+    : pickup?.name ?? '';
+  const hasPickup = pickupUsingCurrent ? !!pickupCurrentPos : !!pickup;
+
+  const destLat = destUsingCurrent ? destCurrentPos?.latitude : destination?.latitude;
+  const destLng = destUsingCurrent ? destCurrentPos?.longitude : destination?.longitude;
+  const destAddress = destUsingCurrent && destCurrentPos
+    ? `GPS: ${destCurrentPos.latitude.toFixed(5)}, ${destCurrentPos.longitude.toFixed(5)}`
     : destination?.address ?? '';
-  const destLabel = usingCurrentLocation ? 'Current location' : destination?.name ?? '';
+  const hasDest = destUsingCurrent ? !!destCurrentPos : !!destination;
 
   const fee = useMemo(
-    () => calculateDeliveryEstimate({ pickupLat: pickup?.latitude, pickupLng: pickup?.longitude, destLat, destLng }),
-    [pickup, destLat, destLng]
+    () => calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }),
+    [pickupLat, pickupLng, destLat, destLng]
   );
 
-  const canSubmit = pickup && (destination || usingCurrentLocation) && description.trim() && !imageUploading;
+  const canSubmit = hasPickup && hasDest && description.trim() && !imageUploading && !submitting;
 
-  function useCurrentLocation() {
+  // Shared geolocation logic for both fields — same behavior, different targets.
+  function requestCurrentLocation({ setLocating, setError, setPos, setUsingCurrent, clearSaved }) {
     if (!('geolocation' in navigator)) {
       setError('Location is not supported by this browser.');
       return;
@@ -147,9 +160,9 @@ export default function DeliveriesPage() {
     setError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setCurrentPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-        setUsingCurrentLocation(true);
-        setDestination(null);
+        setPos({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setUsingCurrent(true);
+        clearSaved();
         setLocating(false);
       },
       (err) => {
@@ -160,11 +173,21 @@ export default function DeliveriesPage() {
     );
   }
 
-  // Mirrors the Flutter _pickImage flow: pick -> show local preview immediately
-  // -> upload to Cloudinary in the background -> swap in the secure_url.
+  const useCurrentForPickup = () => requestCurrentLocation({
+    setLocating: setPickupLocating, setError: setPickupLocationError,
+    setPos: setPickupCurrentPos, setUsingCurrent: setPickupUsingCurrent,
+    clearSaved: () => setPickup(null),
+  });
+
+  const useCurrentForDest = () => requestCurrentLocation({
+    setLocating: setDestLocating, setError: setDestLocationError,
+    setPos: setDestCurrentPos, setUsingCurrent: setDestUsingCurrent,
+    clearSaved: () => setDestination(null),
+  });
+
   async function onPickImage(e) {
     const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-picking the same file later
+    e.target.value = '';
     if (!file) return;
 
     const validationError = validateImageFile(file);
@@ -185,11 +208,8 @@ export default function DeliveriesPage() {
     });
 
     setImageUploading(false);
-    if (url) {
-      setImageUrl(url);
-    } else {
-      setImageError('Upload failed — please try again.');
-    }
+    if (url) setImageUrl(url);
+    else setImageError('Upload failed — please try again.');
   }
 
   function removeImage() {
@@ -202,19 +222,21 @@ export default function DeliveriesPage() {
   }
 
   async function submit() {
-    if (!canSubmit) return;
+    if (!canSubmit || submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
     try {
       const res = await authFetch('/deliveries', {
         method: 'POST',
         body: JSON.stringify({
-          pickupAddress: pickup.name,
+          pickupAddress,
           destinationAddress: destAddress,
           itemDescription: description.trim(),
+          notes: extraNote.trim() || undefined,
           paymentMethod: payment,
-          pickupLatitude: pickup.latitude,
-          pickupLongitude: pickup.longitude,
+          pickupLatitude: pickupLat,
+          pickupLongitude: pickupLng,
           destinationLatitude: destLat,
           destinationLongitude: destLng,
           itemPhotoUrl: imageUrl || undefined,
@@ -222,8 +244,9 @@ export default function DeliveriesPage() {
       });
       const json = await res.json();
       if (json.success) {
-        setPickup(null); setDestination(null); setDescription('');
-        setUsingCurrentLocation(false); setCurrentPosition(null);
+        setPickup(null); setDestination(null); setDescription(''); setExtraNote('');
+        setPickupUsingCurrent(false); setPickupCurrentPos(null);
+        setDestUsingCurrent(false); setDestCurrentPos(null);
         removeImage();
         setTab('history');
         loadHistory();
@@ -231,6 +254,7 @@ export default function DeliveriesPage() {
     } catch {
       setError('Could not reach the server.');
     }
+    submittingRef.current = false;
     setSubmitting(false);
   }
 
@@ -262,9 +286,17 @@ export default function DeliveriesPage() {
                 locations={locations}
                 loading={loadingLocations}
                 accent="#10b981"
-                onPick={setPickup}
+                overrideLabel={pickupUsingCurrent ? '📍 Current location' : null}
+                onPick={(loc) => { setPickup(loc); setPickupUsingCurrent(false); setPickupCurrentPos(null); }}
               />
             </Field>
+            <CurrentLocationButton
+              active={pickupUsingCurrent}
+              locating={pickupLocating}
+              onClick={useCurrentForPickup}
+              accent="#10b981"
+            />
+            {pickupLocationError && <InlineError message={pickupLocationError} />}
 
             <Field label="DESTINATION" icon={<MapPin size={15} color="#ef4444" />}>
               <LocationPicker
@@ -273,39 +305,36 @@ export default function DeliveriesPage() {
                 locations={locations}
                 loading={loadingLocations}
                 accent="#ef4444"
-                overrideLabel={usingCurrentLocation ? '📍 Current location' : null}
-                onPick={(loc) => { setDestination(loc); setUsingCurrentLocation(false); setCurrentPosition(null); }}
+                overrideLabel={destUsingCurrent ? '📍 Current location' : null}
+                onPick={(loc) => { setDestination(loc); setDestUsingCurrent(false); setDestCurrentPos(null); }}
+              />
+            </Field>
+            <CurrentLocationButton
+              active={destUsingCurrent}
+              locating={destLocating}
+              onClick={useCurrentForDest}
+              accent="#ef4444"
+            />
+            {destLocationError && <InlineError message={destLocationError} />}
+
+            <Field label="ITEM DESCRIPTION" icon={<Package size={15} color="#8b5cf6" />}>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="e.g. Documents, a small package..."
+                style={{ ...textareaStyle }}
               />
             </Field>
 
-            <button
-              onClick={useCurrentLocation}
-              disabled={locating}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                padding: '10px 14px', borderRadius: 10, marginBottom: 14, cursor: locating ? 'default' : 'pointer',
-                border: `1px solid ${usingCurrentLocation ? '#10b981' : '#e5e7eb'}`,
-                background: usingCurrentLocation ? '#ecfdf5' : '#f9fafb',
-                fontFamily: 'inherit',
-              }}
-            >
-              {locating
-                ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: '#10b981' }} />
-                : <LocateFixed size={16} color={usingCurrentLocation ? '#10b981' : '#9ca3af'} />}
-              <span style={{ fontSize: 13, fontWeight: 600, color: usingCurrentLocation ? '#10b981' : '#6b7280' }}>
-                {locating ? 'Getting location...' : usingCurrentLocation ? 'Using current location ✓' : 'Use my current location'}
-              </span>
-            </button>
-
-            <Field label="ITEM DESCRIPTION" icon={<Package size={15} color="#8b5cf6" />}>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="e.g. Documents, a small package..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none',
-              width: '100%', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, fontFamily: 'inherit',
-                fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',
-              }} />
-            </Field>
-
-              <Field label="ADDITIONAL NOTES?" icon={<Package size={15} color="#8b5cf6" />}>
-              <textarea value={description} onChange={(e) => setExtraNote(e.target.value)} rows={2} placeholder="e.g. Any special information for driver..." style={{ ...inputStyle, height: 'auto', paddingTop: 10, resize: 'none' }} />
+            <Field label="ADDITIONAL NOTES?" icon={<Package size={15} color="#8b5cf6" />}>
+              <textarea
+                value={extraNote}
+                onChange={(e) => setExtraNote(e.target.value)}
+                rows={2}
+                placeholder="e.g. Any special information for driver..."
+                style={{ ...textareaStyle }}
+              />
             </Field>
 
             <Field label="PHOTO OF THE ITEM (OPTIONAL)" icon={<Camera size={15} color="#f97316" />}>
@@ -377,7 +406,7 @@ export default function DeliveriesPage() {
               <PayChip value="MOMO" label="📱  MoMo" selected={payment} onSelect={setPayment} theme={theme} />
             </div>
 
-            <button onClick={submit} disabled={!canSubmit || submitting} style={{
+            <button onClick={submit} disabled={!canSubmit} style={{
               width: '100%', height: 48, border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 14, fontFamily: 'inherit',
               background: canSubmit ? theme.green : '#d1d5db', color: '#fff', cursor: canSubmit ? 'pointer' : 'not-allowed',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -414,10 +443,49 @@ export default function DeliveriesPage() {
   );
 }
 
+function CurrentLocationButton({ active, locating, onClick, accent }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={locating}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+        padding: '10px 14px', borderRadius: 10, marginBottom: 14, cursor: locating ? 'default' : 'pointer',
+        border: `1px solid ${active ? accent : '#e5e7eb'}`,
+        background: active ? `${accent}14` : '#f9fafb',
+        fontFamily: 'inherit',
+      }}
+    >
+      {locating
+        ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: accent }} />
+        : <LocateFixed size={16} color={active ? accent : '#9ca3af'} />}
+      <span style={{ fontSize: 13, fontWeight: 600, color: active ? accent : '#6b7280' }}>
+        {locating ? 'Getting location...' : active ? 'Using current location ✓' : 'Use my current location'}
+      </span>
+    </button>
+  );
+}
+
+function InlineError({ message }) {
+  return (
+    <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 13 }}>
+      {message}
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════
-   LocationPicker — mirrors the mobile _LocationPicker:
-   shows a search box + dropdown of saved locations,
-   collapses into a selected pill once one is chosen.
+   LocationPicker — three real states, not two.
+
+   The old version rendered the search <input autoFocus>
+   any time nothing was selected AND it wasn't explicitly
+   open — which on page load is always true (nothing is
+   selected yet), so the input mounted immediately and the
+   mobile keyboard popped without anyone tapping anything.
+
+   Now: closed+empty is a plain button (no input exists in
+   the DOM), closed+selected is the pill, and the real
+   autoFocus input only mounts once you deliberately tap in.
 ════════════════════════════════════════════ */
 function LocationPicker({ hint, selected, locations, loading, accent, overrideLabel, onPick }) {
   const [open, setOpen] = useState(false);
@@ -441,81 +509,85 @@ function LocationPicker({ hint, selected, locations, loading, accent, overrideLa
     setOpen(false);
   }
 
-  return (
-    <div ref={wrapRef} style={{ position: 'relative' }}>
-      {displayLabel && !open ? (
+  if (!open) {
+    return (
+      <div ref={wrapRef} style={{ position: 'relative' }}>
         <button
           type="button"
           onClick={() => setOpen(true)}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
             padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-            border: `1.5px solid ${accent}`, background: `${accent}14`,
+            border: displayLabel ? `1.5px solid ${accent}` : '1px solid #e5e7eb',
+            background: displayLabel ? `${accent}14` : '#f9fafb',
           }}
         >
-          <CheckCircle2 size={16} color={accent} />
+          {displayLabel ? <CheckCircle2 size={16} color={accent} /> : <Search size={16} color="#9ca3af" />}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{displayLabel}</div>
+            <div style={{ fontSize: 13, fontWeight: displayLabel ? 700 : 500, color: displayLabel ? '#111827' : '#9ca3af' }}>
+              {displayLabel || hint}
+            </div>
             {selected?.address && (
               <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.address}</div>
             )}
           </div>
         </button>
-      ) : (
-        <div style={{ position: 'relative' }}>
-          <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setOpen(true)}
-            placeholder={hint}
-            style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12 }}
-          />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-              <X size={15} color="#9ca3af" />
-            </button>
-          )}
-        </div>
-      )}
+      </div>
+    );
+  }
 
-      {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
-          background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 260, overflowY: 'auto',
-        }}>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
-            </div>
-          ) : results.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
-          ) : (
-            results.map((loc, i) => (
-              <button
-                key={loc.id}
-                type="button"
-                onClick={() => pick(loc)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                  padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                  borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
-                }}
-              >
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MapPin size={16} color={accent} />
-                </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
-                  <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <Search size={16} color={accent} style={{ position: 'absolute', left: 12, top: 13 }} />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={hint}
+          style={{ ...inputStyle, paddingLeft: 36, paddingRight: query ? 32 : 12 }}
+        />
+        {query && (
+          <button type="button" onClick={() => setQuery('')} style={{ position: 'absolute', right: 10, top: 13, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+            <X size={15} color="#9ca3af" />
+          </button>
+        )}
+      </div>
+
+      <div style={{
+        position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 6, zIndex: 20,
+        background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.07)', maxHeight: 260, overflowY: 'auto',
+      }}>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: accent }} />
+          </div>
+        ) : results.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No locations found</div>
+        ) : (
+          results.map((loc, i) => (
+            <button
+              key={loc.id}
+              type="button"
+              onClick={() => pick(loc)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                padding: '11px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                borderTop: i === 0 ? 'none' : '1px solid #f3f4f6',
+              }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <MapPin size={16} color={accent} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{loc.name}</div>
+                <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loc.address}</div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -557,3 +629,4 @@ function PayChip({ value, label, selected, onSelect, theme }) {
 }
 
 const inputStyle = { width: '100%', height: 44, border: '1px solid #e5e7eb', borderRadius: 10, padding: '0 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' };
+const textareaStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 10, padding: '10px 12px', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box', resize: 'none' };
