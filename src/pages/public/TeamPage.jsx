@@ -266,7 +266,7 @@ export default function TeamPage() {
             lineHeight: 1.65, borderLeft: 'none', margin: 0,
             padding: '0 0 28px',
           }}>
-            "I watched my mother run her store for years — keeping a notebook of customers who called in orders, then manually sending someone to deliver. There had to be a better way. That notebook became FirstChoice."
+            "Every Saturday, I faced the exact same problem: I was starving, but living far from the market meant getting a good meal was an uphill battle. First Choice was born to solve my own craving—connecting people like me to the market, no matter how far away they live."
           </blockquote>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
             <div style={{
