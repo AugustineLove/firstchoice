@@ -164,35 +164,40 @@ export default function CustomerHome() {
 
       {/* ── TOP BAR ── */}
       <div className="fc-topbar">
-  <div className="fc-topbar__row">
-    {/* Avatar + wordmark */}
-    <div className="fc-topbar__brand">
-      <div className="fc-topbar__avatar">
-        <span className="fc-topbar__avatar-ring" aria-hidden="true" />
-        <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
-      </div>
-      
-    </div>
+      <div className="fc-topbar__row">
+        {/* Avatar + wordmark */}
+        <div className="fc-topbar__brand">
+          <div className="fc-topbar__avatar">
+            <span className="fc-topbar__avatar-ring" aria-hidden="true" />
+            <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
+          </div>
+          
+        </div>
 
-    {/* Greeting */}
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div className="fc-topbar__greeting">
-        {/* <span className="fc-topbar__wordmark">First Choice</span> */}
-        Hello, {firstName} <span aria-hidden="true">👋</span>
-      </div>
-      <div className="fc-topbar__subtitle">What would you like today?</div>
-    </div>
+        {/* Greeting */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="fc-topbar__greeting-block">
+            <div className="fc-topbar__wordmark">
+              <span className="fc-topbar__wordmark-dot" aria-hidden="true" />
+              First Choice
+            </div>
+            <div className="fc-topbar__greeting">
+              Hello, {firstName} <span aria-hidden="true">👋</span>
+            </div>
+          </div>
+          <div className="fc-topbar__subtitle">What would you like today?</div>
+        </div>
 
-    {/* Notification button */}
-    <button
-      type="button"
-      onClick={() => navigate('/notifications')}
-      className="fc-topbar__notif"
-      aria-label="Notifications"
-    >
-      <Bell size={20} color="#fff" strokeWidth={2.25} />
-    </button>
-  </div>
+        {/* Notification button */}
+        <button
+          type="button"
+          onClick={() => navigate('/notifications')}
+          className="fc-topbar__notif"
+          aria-label="Notifications"
+        >
+          <Bell size={20} color="#fff" strokeWidth={2.25} />
+        </button>
+      </div>
 
   {/* ── SEARCH ── */}
   <div className="fc-topbar__search-wrap">
@@ -217,160 +222,176 @@ export default function CustomerHome() {
     </div>
   </div>
 
-  <style>{`
-    .fc-topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background:
-        radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
-        linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    }
+ <style>{`
+  .fc-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background:
+      radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+      linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  }
 
-    .fc-topbar__row {
-      position: relative;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: clamp(14px, 3vw, 18px) clamp(16px, 4vw, 20px) 10px;
-      display: flex;
-      align-items: center;
-      gap: clamp(10px, 2.5vw, 14px);
-    }
+  .fc-topbar__row {
+    position: relative;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(14px, 3vw, 18px) clamp(16px, 4vw, 20px) 10px;
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2.5vw, 14px);
+  }
 
-    .fc-topbar__brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
+  .fc-topbar__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
 
-    .fc-topbar__avatar {
-  position: relative;
-  width: clamp(40px, 9vw, 46px);
-  height: clamp(40px, 9vw, 46px);
-  border-radius: 50%;
-  // background: #fff;
-  // overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
+  .fc-topbar__avatar {
+    position: relative;
+    width: clamp(40px, 9vw, 46px);
+    height: clamp(40px, 9vw, 46px);
+  }
 
+  .fc-topbar__avatar-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    animation: fc-pulse 2.4s ease-in-out infinite;
+  }
 
-    .fc-topbar__avatar-ring {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.5);
-  animation: fc-pulse 2.4s ease-in-out infinite;
-}
-    .fc-topbar__avatar-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-}
+  .fc-topbar__avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    background: rgba(255,255,255,0.14);
+    border: 2px solid rgba(255,255,255,0.35);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
 
-    .fc-topbar__wordmark {
-      font-size: 12.5px;
-      font-weight: 700;
-      letter-spacing: 0.4px;
-      color: rgba(255,255,255,0.85);
-      white-space: nowrap;
-    }
+  .fc-topbar__greeting-block {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 2px;
+  }
 
-    .fc-topbar__greeting {
-      font-weight: 900;
-      font-size: clamp(16px, 4vw, 20px);
-      color: #fff;
-      line-height: 1.2;
-      letter-spacing: -0.3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+  .fc-topbar__wordmark {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: #f6c453;
+  }
 
-    .fc-topbar__subtitle {
-      margin-top: 3px;
-      font-size: clamp(12px, 2.6vw, 13px);
-      color: rgba(255,255,255,0.8);
-      font-weight: 500;
-    }
+  .fc-topbar__wordmark-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #f6c453;
+    box-shadow: 0 0 0 3px rgba(246, 196, 83, 0.22);
+    flex-shrink: 0;
+  }
 
-    .fc-topbar__notif {
-      flex-shrink: 0;
-      width: clamp(38px, 8vw, 42px);
-      height: clamp(38px, 8vw, 42px);
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.15s ease;
-    }
+  .fc-topbar__greeting {
+    font-weight: 900;
+    font-size: clamp(16px, 4vw, 20px);
+    color: #fff;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
 
-    .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
-    .fc-topbar__notif:active { transform: scale(0.94); }
-    .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .fc-topbar__subtitle {
+    margin-top: 3px;
+    font-size: clamp(12px, 2.6vw, 13px);
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+  }
 
-    .fc-topbar__search-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 clamp(16px, 4vw, 20px) 16px;
-    }
+  .fc-topbar__notif {
+    flex-shrink: 0;
+    width: clamp(38px, 8vw, 42px);
+    height: clamp(38px, 8vw, 42px);
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
 
-    .fc-topbar__search {
-      position: relative;
-    }
+  .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
+  .fc-topbar__notif:active { transform: scale(0.94); }
+  .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-    .fc-topbar__search-input {
-      width: 100%;
-      height: 46px;
-      border-radius: 14px;
-      border: 1px solid transparent;
-      background: #fff;
-      padding-left: 40px;
-      padding-right: 14px;
-      font-family: inherit;
-      font-size: 14px;
-      box-sizing: border-box;
-      outline: none;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-      transition: box-shadow 0.2s ease, border-color 0.2s ease;
-    }
+  .fc-topbar__search-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 20px) 16px;
+  }
 
-    .fc-topbar__search-input:focus {
-      border-color: #1B5E3B;
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
-    }
+  .fc-topbar__search {
+    position: relative;
+  }
 
-    .fc-topbar__search-clear {
-      position: absolute;
-      right: 10px;
-      top: 14px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: flex;
-    }
+  .fc-topbar__search-input {
+    width: 100%;
+    height: 46px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: #fff;
+    padding-left: 40px;
+    padding-right: 14px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    outline: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
 
-    @keyframes fc-pulse {
-      0%, 100% { opacity: 0.55; transform: scale(1); }
-      50% { opacity: 0; transform: scale(1.18); }
-    }
+  .fc-topbar__search-input:focus {
+    border-color: #1B5E3B;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
+  }
 
-    @media (prefers-reduced-motion: reduce) {
-      .fc-topbar__avatar-ring { animation: none; }
-    }
-  `}</style>
+  .fc-topbar__search-clear {
+    position: absolute;
+    right: 10px;
+    top: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+  }
+
+  @keyframes fc-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0; transform: scale(1.18); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fc-topbar__avatar-ring { animation: none; }
+  }
+`}</style>
 </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
