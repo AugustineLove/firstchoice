@@ -227,6 +227,9 @@ export default function CustomerHome() {
   </div>
 
   <style>{`
+
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Fraunces:ital,wght@1,500;1,600&display=swap');
+
     /* If you can add a font import, this pairing is what the wordmark
        is designed for — Space Grotesk's geometric, slightly technical
        letterforms read as "fast/modern" next to DM Sans's warmer body
@@ -317,31 +320,32 @@ export default function CustomerHome() {
 
     /* three fading dots — a quiet motion trail behind the mark,
        reads as "moving fast" without needing an icon */
-    .fc-topbar__wordmark-trail {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
+        .fc-topbar__wordmark-trail {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
 
 .fc-topbar__wordmark-trail span {
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background: #f6c453;
-  animation: fc-dot-load 1.1s ease-in-out infinite;
+  opacity: 0.55;
+  animation: fc-dot-shine 1.2s ease-in-out infinite;
 }
 
 .fc-topbar__wordmark-trail span:nth-child(1) { animation-delay: 0s; }
-.fc-topbar__wordmark-trail span:nth-child(2) { animation-delay: 0.15s; }
-.fc-topbar__wordmark-trail span:nth-child(3) { animation-delay: 0.3s; }
+.fc-topbar__wordmark-trail span:nth-child(2) { animation-delay: 0.2s; }
+.fc-topbar__wordmark-trail span:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes fc-dot-load {
-  0%, 80%, 100% { opacity: 0.25; transform: scale(0.7); }
-  40% { opacity: 1; transform: scale(1); }
+@keyframes fc-dot-shine {
+  0%, 100% { opacity: 0.55; box-shadow: 0 0 0 rgba(246, 196, 83, 0); }
+  50% { opacity: 1; box-shadow: 0 0 6px 1px rgba(246, 196, 83, 0.65); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fc-topbar__wordmark-trail span { animation: none; opacity: 0.6; }
+  .fc-topbar__wordmark-trail span { animation: none; opacity: 0.85; }
 }
 
     .fc-topbar__notif {
@@ -368,13 +372,15 @@ export default function CustomerHome() {
       margin-top: clamp(14px, 3.5vw, 20px);
     }
 
-    .fc-topbar__greeting {
-      font-weight: 900;
-      font-size: clamp(20px, 5.5vw, 26px);
-      color: #fff;
-      line-height: 1.15;
-      letter-spacing: -0.4px;
-    }
+ .fc-topbar__greeting {
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(22px, 5.8vw, 28px);
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+}
 
     .fc-topbar__subtitle {
       margin-top: 4px;
