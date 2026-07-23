@@ -163,41 +163,45 @@ export default function CustomerHome() {
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
 
       {/* ── TOP BAR ── */}
-      <div className="fc-topbar">
-      <div className="fc-topbar__row">
-        {/* Avatar + wordmark */}
-        <div className="fc-topbar__brand">
-          <div className="fc-topbar__avatar">
-            <span className="fc-topbar__avatar-ring" aria-hidden="true" />
-            <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
-          </div>
-          
+     <div className="fc-topbar">
+  <div className="fc-topbar__row">
+
+    {/* ── BRAND ROW: avatar + wordmark, bell ── */}
+    <div className="fc-topbar__brand-row">
+      <div className="fc-topbar__brand">
+        <div className="fc-topbar__avatar">
+          <span className="fc-topbar__avatar-ring" aria-hidden="true" />
+          <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
         </div>
 
-        {/* Greeting */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="fc-topbar__greeting-block">
-            <div className="fc-topbar__wordmark">
-              <span className="fc-topbar__wordmark-dot" aria-hidden="true" />
-              First Choice
-            </div>
-            <div className="fc-topbar__greeting">
-              Hello, {firstName} <span aria-hidden="true">👋</span>
-            </div>
-          </div>
-          <div className="fc-topbar__subtitle">What would you like today?</div>
+        <div className="fc-topbar__wordmark">
+          <span className="fc-topbar__wordmark-text">
+            First<span className="fc-topbar__wordmark-accent">Choice</span>
+          </span>
+          <span className="fc-topbar__wordmark-trail" aria-hidden="true">
+            <span /><span /><span />
+          </span>
         </div>
-
-        {/* Notification button */}
-        <button
-          type="button"
-          onClick={() => navigate('/notifications')}
-          className="fc-topbar__notif"
-          aria-label="Notifications"
-        >
-          <Bell size={20} color="#fff" strokeWidth={2.25} />
-        </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => navigate('/notifications')}
+        className="fc-topbar__notif"
+        aria-label="Notifications"
+      >
+        <Bell size={20} color="#fff" strokeWidth={2.25} />
+      </button>
+    </div>
+
+    {/* ── HERO: greeting, full width ── */}
+    <div className="fc-topbar__hero">
+      <div className="fc-topbar__greeting">
+        Hello, {firstName} <span aria-hidden="true">👋</span>
+      </div>
+      <div className="fc-topbar__subtitle">What would you like today?</div>
+    </div>
+  </div>
 
   {/* ── SEARCH ── */}
   <div className="fc-topbar__search-wrap">
@@ -222,176 +226,198 @@ export default function CustomerHome() {
     </div>
   </div>
 
- <style>{`
-  .fc-topbar {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background:
-      radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
-      linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-  }
+  <style>{`
+    /* If you can add a font import, this pairing is what the wordmark
+       is designed for — Space Grotesk's geometric, slightly technical
+       letterforms read as "fast/modern" next to DM Sans's warmer body
+       text. It still looks intentional on the fallback stack alone. */
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
 
-  .fc-topbar__row {
-    position: relative;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: clamp(14px, 3vw, 18px) clamp(16px, 4vw, 20px) 10px;
-    display: flex;
-    align-items: center;
-    gap: clamp(10px, 2.5vw, 14px);
-  }
+    .fc-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
+        linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
 
-  .fc-topbar__brand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-  }
+    .fc-topbar__row {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 20px) 10px;
+    }
 
-  .fc-topbar__avatar {
-    position: relative;
-    width: clamp(40px, 9vw, 46px);
-    height: clamp(40px, 9vw, 46px);
-  }
+    .fc-topbar__brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
 
-  .fc-topbar__avatar-ring {
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255,255,255,0.5);
-    animation: fc-pulse 2.4s ease-in-out infinite;
-  }
+    .fc-topbar__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
 
-  .fc-topbar__avatar-img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    background: rgba(255,255,255,0.14);
-    border: 2px solid rgba(255,255,255,0.35);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
+    .fc-topbar__avatar {
+      position: relative;
+      flex-shrink: 0;
+      width: clamp(34px, 7vw, 38px);
+      height: clamp(34px, 7vw, 38px);
+    }
 
-  .fc-topbar__greeting-block {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 2px;
-  }
+    .fc-topbar__avatar-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.5);
+      animation: fc-pulse 2.4s ease-in-out infinite;
+    }
 
-  .fc-topbar__wordmark {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    color: #f6c453;
-  }
+    .fc-topbar__avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      background: #fff;
+      border: 2px solid rgba(255,255,255,0.35);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 
-  .fc-topbar__wordmark-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #f6c453;
-    box-shadow: 0 0 0 3px rgba(246, 196, 83, 0.22);
-    flex-shrink: 0;
-  }
+    /* ── WORDMARK — the signature element ── */
+    .fc-topbar__wordmark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
 
-  .fc-topbar__greeting {
-    font-weight: 900;
-    font-size: clamp(16px, 4vw, 20px);
-    color: #fff;
-    line-height: 1.2;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin: 0;
-  }
+    .fc-topbar__wordmark-text {
+      font-family: 'Space Grotesk', 'Poppins', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: clamp(15px, 3.6vw, 18px);
+      letter-spacing: -0.4px;
+      color: #fff;
+      transform: skewX(-6deg);
+      display: inline-block;
+      white-space: nowrap;
+    }
 
-  .fc-topbar__subtitle {
-    margin-top: 3px;
-    font-size: clamp(12px, 2.6vw, 13px);
-    color: rgba(255,255,255,0.8);
-    font-weight: 500;
-  }
+    .fc-topbar__wordmark-accent {
+      background: linear-gradient(90deg, #ffe3a3, #f6c453);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-  .fc-topbar__notif {
-    flex-shrink: 0;
-    width: clamp(38px, 8vw, 42px);
-    height: clamp(38px, 8vw, 42px);
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.25);
-    background: rgba(255,255,255,0.12);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.15s ease;
-  }
+    /* three fading dots — a quiet motion trail behind the mark,
+       reads as "moving fast" without needing an icon */
+    .fc-topbar__wordmark-trail {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .fc-topbar__wordmark-trail span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #f6c453;
+    }
+    .fc-topbar__wordmark-trail span:nth-child(1) { opacity: 0.9; }
+    .fc-topbar__wordmark-trail span:nth-child(2) { opacity: 0.55; }
+    .fc-topbar__wordmark-trail span:nth-child(3) { opacity: 0.25; }
 
-  .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
-  .fc-topbar__notif:active { transform: scale(0.94); }
-  .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .fc-topbar__notif {
+      flex-shrink: 0;
+      width: clamp(36px, 8vw, 40px);
+      height: clamp(36px, 8vw, 40px);
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+    .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
+    .fc-topbar__notif:active { transform: scale(0.94); }
+    .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-  .fc-topbar__search-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 clamp(16px, 4vw, 20px) 16px;
-  }
+    /* ── HERO greeting, now full width ── */
+    .fc-topbar__hero {
+      margin-top: clamp(14px, 3.5vw, 20px);
+    }
 
-  .fc-topbar__search {
-    position: relative;
-  }
+    .fc-topbar__greeting {
+      font-weight: 900;
+      font-size: clamp(20px, 5.5vw, 26px);
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -0.4px;
+    }
 
-  .fc-topbar__search-input {
-    width: 100%;
-    height: 46px;
-    border-radius: 14px;
-    border: 1px solid transparent;
-    background: #fff;
-    padding-left: 40px;
-    padding-right: 14px;
-    font-family: inherit;
-    font-size: 14px;
-    box-sizing: border-box;
-    outline: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  }
+    .fc-topbar__subtitle {
+      margin-top: 4px;
+      font-size: clamp(12.5px, 2.8vw, 14px);
+      color: rgba(255,255,255,0.78);
+      font-weight: 500;
+    }
 
-  .fc-topbar__search-input:focus {
-    border-color: #1B5E3B;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
-  }
+    .fc-topbar__search-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px clamp(16px, 4vw, 20px) 18px;
+    }
 
-  .fc-topbar__search-clear {
-    position: absolute;
-    right: 10px;
-    top: 14px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: flex;
-  }
+    .fc-topbar__search { position: relative; }
 
-  @keyframes fc-pulse {
-    0%, 100% { opacity: 0.55; transform: scale(1); }
-    50% { opacity: 0; transform: scale(1.18); }
-  }
+    .fc-topbar__search-input {
+      width: 100%;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: #fff;
+      padding-left: 40px;
+      padding-right: 14px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .fc-topbar__search-input:focus {
+      border-color: #1B5E3B;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    .fc-topbar__avatar-ring { animation: none; }
-  }
-`}</style>
+    .fc-topbar__search-clear {
+      position: absolute;
+      right: 10px;
+      top: 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+    }
+
+    @keyframes fc-pulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 0; transform: scale(1.18); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fc-topbar__avatar-ring { animation: none; }
+    }
+  `}</style>
 </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
