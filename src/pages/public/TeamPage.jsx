@@ -277,7 +277,7 @@ export default function TeamPage() {
               KA
             </div>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, color: theme.dark, fontSize: 14 }}>Kweku Stephens</div>
+              <div style={{ fontWeight: 700, color: theme.dark, fontSize: 14 }}>Kweku Stephens (Big God)</div>
               <div style={{ fontSize: 12, color: theme.muted }}>Co-Founder & CEO, FirstChoice</div>
             </div>
           </div>
