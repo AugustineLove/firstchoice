@@ -274,7 +274,7 @@ export default function TeamPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontSize: 15, fontWeight: 800,
             }}>
-              KA
+              KS
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, color: theme.dark, fontSize: 14 }}>Kweku Stephens (Big God)</div>
