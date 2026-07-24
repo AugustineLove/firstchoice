@@ -196,7 +196,7 @@ export default function CustomerHome() {
             <div className="fc-topbar__greeting">
               Yo, {firstName} <span aria-hidden="true">👋</span>
             </div>
-            <div className="fc-topbar__subtitle">Just few taps, we don land!</div>
+            <div className="fc-topbar__subtitle">Make some taps, let's get it delivered!</div>
           </div>
         </div>
 
