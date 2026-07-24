@@ -100,6 +100,10 @@ export default function DeliveriesPage() {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
+  const [forFriend, setForFriend] = useState(false);
+const [recipientName, setRecipientName] = useState('');
+const [recipientPhone, setRecipientPhone] = useState('');
+
   const loadLocations = useCallback(async () => {
     setLoadingLocations(true);
     setLocationsError(null);
@@ -148,8 +152,8 @@ export default function DeliveriesPage() {
     [pickupLat, pickupLng, destLat, destLng]
   );
 
-  const canSubmit = hasPickup && hasDest && description.trim() && !imageUploading && !submitting;
-
+  const friendDetailsValid = !forFriend || (recipientName.trim() && recipientPhone.trim());
+const canSubmit = hasPickup && hasDest && description.trim() && friendDetailsValid && !imageUploading && !submitting;
   // Shared geolocation logic for both fields — same behavior, different targets.
   function requestCurrentLocation({ setLocating, setError, setPos, setUsingCurrent, clearSaved }) {
     if (!('geolocation' in navigator)) {
@@ -222,41 +226,46 @@ export default function DeliveriesPage() {
   }
 
   async function submit() {
-    if (!canSubmit || submittingRef.current) return;
-    submittingRef.current = true;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await authFetch('/deliveries', {
-        method: 'POST',
-        body: JSON.stringify({
-          pickupAddress,
-          destinationAddress: destAddress,
-          itemDescription: description.trim(),
-          notes: extraNote.trim() || undefined,
-          paymentMethod: payment,
-          pickupLatitude: pickupLat,
-          pickupLongitude: pickupLng,
-          destinationLatitude: destLat,
-          destinationLongitude: destLng,
-          itemPhotoUrl: imageUrl || undefined,
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        setPickup(null); setDestination(null); setDescription(''); setExtraNote('');
-        setPickupUsingCurrent(false); setPickupCurrentPos(null);
-        setDestUsingCurrent(false); setDestCurrentPos(null);
-        removeImage();
-        setTab('history');
-        loadHistory();
-      } else setError(json.message || 'Could not book this delivery.');
-    } catch {
-      setError('Could not reach the server.');
-    }
-    submittingRef.current = false;
-    setSubmitting(false);
+  if (!canSubmit || submittingRef.current) return;
+  submittingRef.current = true;
+  setSubmitting(true);
+  setError(null);
+  try {
+    const res = await authFetch('/deliveries', {
+      method: 'POST',
+      body: JSON.stringify({
+        pickupAddress,
+        destinationAddress: destAddress,
+        itemDescription: description.trim(),
+        notes: extraNote.trim() || undefined,
+        paymentMethod: payment,
+        pickupLatitude: pickupLat,
+        pickupLongitude: pickupLng,
+        destinationLatitude: destLat,
+        destinationLongitude: destLng,
+        imageUrl: imageUrl || undefined,
+        ...(forFriend ? {
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone.trim(),
+        } : {}),
+      }),
+    });
+    const json = await res.json();
+    if (json.success) {
+      setPickup(null); setDestination(null); setDescription(''); setExtraNote('');
+      setPickupUsingCurrent(false); setPickupCurrentPos(null);
+      setDestUsingCurrent(false); setDestCurrentPos(null);
+      setForFriend(false); setRecipientName(''); setRecipientPhone('');
+      removeImage();
+      setTab('history');
+      loadHistory();
+    } else setError(json.message || 'Could not book this delivery.');
+  } catch {
+    setError('Could not reach the server.');
   }
+  submittingRef.current = false;
+  setSubmitting(false);
+}
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
@@ -391,6 +400,40 @@ export default function DeliveriesPage() {
               )}
               {imageError && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>{imageError}</div>}
             </Field>
+
+            <button
+            type="button"
+            onClick={() => setForFriend((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              padding: '10px 14px', borderRadius: 10, marginBottom: forFriend ? 10 : 14, cursor: 'pointer',
+              border: `1px solid ${forFriend ? theme.green : '#e5e7eb'}`,
+              background: forFriend ? '#ecfdf5' : '#f9fafb',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Bike size={16} color={forFriend ? theme.green : '#9ca3af'} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: forFriend ? theme.green : '#6b7280' }}>
+              {forFriend ? "Delivering for someone else ✓" : "This delivery is for someone else"}
+            </span>
+          </button>
+
+          {forFriend && (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <input
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                placeholder="Recipient's name"
+                style={inputStyle}
+              />
+              <input
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                placeholder="Recipient's phone"
+                style={inputStyle}
+              />
+            </div>
+          )}
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 14,

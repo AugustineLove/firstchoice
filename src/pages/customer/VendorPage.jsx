@@ -68,6 +68,18 @@ export default function VendorPage() {
   const [submitted, setSubmitted] = useState(false);
   const submittingRef = useRef(false);
 
+  const [orderImage, setOrderImage] = useState(null);
+  const [orderImagePreview, setOrderImagePreview] = useState(null);
+  const orderImageInputRef = useRef(null);
+
+  function handleOrderImageSelect(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { setSubmitError('Please select an image file'); return; }
+  if (file.size > 5 * 1024 * 1024) { setSubmitError('Image must be under 5MB'); return; }
+  setOrderImage(file);
+  setOrderImagePreview(URL.createObjectURL(file));
+  }
 
 
   const getPlaceholder = () => {
@@ -83,8 +95,8 @@ No pepper please`;
       return `List your grocery items, e.g.
 2kg Rice
 1 Crate of Eggs
-1 Bottle Cooking Oil
-3 tin tomatoes`;
+1 Bottle of Cooking Oil
+3 Tin tomatoes`;
 
     case 'Pharmacy':
       return `List the medicines or health products you need, e.g.
@@ -191,29 +203,46 @@ Any special instructions`;
   const friendDetailsValid = !forFriend || (recipientName.trim() && recipientPhone.trim());
   const canSubmit = note.trim() && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
 
-  async function submitOrder() {
-    if (!canSubmit || submittingRef.current) return;
-    submittingRef.current = true;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const res = await authFetch('/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          vendorId: id,
-          note: note.trim(),
-          deliveryAddress: destAddress,
-          deliveryLatitude: destLat,
-          deliveryLongitude: destLng,
-          paymentMethod: payment,
-          ...(forFriend ? {
-            recipientName: recipientName.trim(),
-            recipientPhone: recipientPhone.trim(),
-          } : {}),
-        }),
-      });
-      const json = await res.json();
-      if (json.success) {
+      async function submitOrder() {
+      if (!canSubmit || submittingRef.current) return;
+      submittingRef.current = true;
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const res = await authFetch('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            vendorId: id,
+            note: note.trim(),
+            deliveryAddress: destAddress,
+            deliveryLatitude: destLat,
+            deliveryLongitude: destLng,
+            paymentMethod: payment,
+            ...(forFriend ? {
+              recipientName: recipientName.trim(),
+              recipientPhone: recipientPhone.trim(),
+            } : {}),
+          }),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          setSubmitError(json.message || 'Could not submit your order.');
+          submittingRef.current = false;
+          setSubmitting(false);
+          return;
+        }
+
+        // Image is optional and best-effort — a failed upload shouldn't block a successfully placed order
+        if (orderImage) {
+          try {
+            const fd = new FormData();
+            fd.append('image', orderImage);
+            await authFetch(`/orders/${json.data.order.id}/image`, { method: 'POST', body: fd });
+          } catch {
+            // silently ignore — order already exists
+          }
+        }
+
         setSubmitted(true);
         setNote('');
         setDestination(null);
@@ -222,15 +251,14 @@ Any special instructions`;
         setForFriend(false);
         setRecipientName('');
         setRecipientPhone('');
-      } else {
-        setSubmitError(json.message || 'Could not submit your order.');
+        setOrderImage(null);
+        setOrderImagePreview(null);
+      } catch {
+        setSubmitError('Could not reach the server.');
       }
-    } catch {
-      setSubmitError('Could not reach the server.');
+      submittingRef.current = false;
+      setSubmitting(false);
     }
-    submittingRef.current = false;
-    setSubmitting(false);
-  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 40 }}>
@@ -326,6 +354,43 @@ Any special instructions`;
               }}
             />
 
+            <div style={{ margin: '12px 0 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+            <Package size={15} color="#9ca3af" />
+            ATTACH A PHOTO <span style={{ fontWeight: 500, color: '#9ca3af' }}>(optional)</span>
+          </div>
+
+          {orderImagePreview ? (
+            <div style={{ position: 'relative', width: 96, height: 96, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+              <img src={orderImagePreview} alt="Order reference" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button
+                type="button"
+                onClick={() => { setOrderImage(null); setOrderImagePreview(null); }}
+                style={{
+                  position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <X size={13} color="#fff" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => orderImageInputRef.current?.click()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10,
+                border: '1px dashed #d1d5db', background: '#f9fafb', cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <Package size={16} color="#9ca3af" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Add a photo</span>
+            </button>
+          )}
+          <input ref={orderImageInputRef} type="file" accept="image/*" onChange={handleOrderImageSelect} style={{ display: 'none' }} />
+        </div>
+
             {/* ── DELIVERY LOCATION (compulsory) ── */}
             <Field label="DELIVER TO" icon={<MapPin size={15} color="#ef4444" />}>
               <LocationPicker
@@ -392,7 +457,7 @@ Any special instructions`;
                 <input
                   value={recipientPhone}
                   onChange={(e) => setRecipientPhone(e.target.value)}
-                  placeholder="Friend's phone"
+                  placeholder="Friend's phone number"
                   style={inputStyle}
                 />
               </div>
@@ -403,16 +468,21 @@ Any special instructions`;
               border: `1px solid ${theme.green}`, borderRadius: 10, background: '#f9fafb',
             }}>
               <span style={{ fontSize: 13, color: '#374151' }}>Delivery Fee:</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>GHS {calculateDeliveryEstimate({
-              pickupLat: vendor?.latitude,
-              pickupLng: vendor?.longitude,
-              destinationLat: usingCurrentLocation
-                  ? currentPosition?.latitude
-                  : destination?.latitude,
-              destinationLng: usingCurrentLocation
-                  ? currentPosition?.longitude
-                  : destination?.longitude,
-            })}.00</span>
+             <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>
+              {(() => {
+                const pickupLat = vendor?.latitude != null ? Number(vendor.latitude) : null;
+                const pickupLng = vendor?.longitude != null ? Number(vendor.longitude) : null;
+                const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
+                const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
+
+                if (pickupLat == null || pickupLng == null || destLat == null || destLng == null || Number.isNaN(pickupLat) || Number.isNaN(pickupLng)) {
+                  return 'GHS —';
+                }
+
+                const fee = calculateDeliveryEstimate({ pickupLat, pickupLng, destinationLat: Number(destLat), destinationLng: Number(destLng) });
+                return Number.isNaN(fee) ? 'GHS —' : `GHS ${fee}.00`;
+              })()}
+            </span>
             </div>
 
             {/* ── PAYMENT METHOD ── */}
