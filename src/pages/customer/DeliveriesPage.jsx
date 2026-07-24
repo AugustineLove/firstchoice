@@ -271,7 +271,7 @@ const canSubmit = hasPickup && hasDest && description.trim() && friendDetailsVal
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
       <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}><ArrowLeft size={20} /></button>
+          {/* <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}><ArrowLeft size={20} /></button> */}
           <span style={{ fontWeight: 800, fontSize: 16 }}>Send a Delivery</span>
         </div>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '0 20px 12px', display: 'flex', gap: 8 }}>
