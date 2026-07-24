@@ -325,6 +325,40 @@ const canSubmit = hasPickup && hasDest && description.trim() && friendDetailsVal
               accent="#ef4444"
             />
             {destLocationError && <InlineError message={destLocationError} />}
+            
+            <button
+            type="button"
+            onClick={() => setForFriend((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+              padding: '10px 14px', borderRadius: 10, marginBottom: forFriend ? 10 : 14, cursor: 'pointer',
+              border: `1px solid ${forFriend ? theme.green : '#1e40af'}`,
+              background: forFriend ? '#ecfdf5' : '#f9fafb',
+              fontFamily: 'inherit',
+            }}
+          >
+            <Bike size={16} color={forFriend ? theme.green : '#9ca3af'} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: forFriend ? theme.green : '#6b7280' }}>
+              {forFriend ? "Delivering for someone else ✓" : "This delivery is for someone else"}
+            </span>
+          </button>
+
+          {forFriend && (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <input
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                placeholder="Recipient's name"
+                style={inputStyle}
+              />
+              <input
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                placeholder="Recipient's phone"
+                style={inputStyle}
+              />
+            </div>
+          )}
 
             <Field label="ITEM DESCRIPTION" icon={<Package size={15} color="#8b5cf6" />}>
             <textarea
@@ -401,39 +435,7 @@ const canSubmit = hasPickup && hasDest && description.trim() && friendDetailsVal
               {imageError && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 6 }}>{imageError}</div>}
             </Field>
 
-            <button
-            type="button"
-            onClick={() => setForFriend((v) => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-              padding: '10px 14px', borderRadius: 10, marginBottom: forFriend ? 10 : 14, cursor: 'pointer',
-              border: `1px solid ${forFriend ? theme.green : '#e5e7eb'}`,
-              background: forFriend ? '#ecfdf5' : '#f9fafb',
-              fontFamily: 'inherit',
-            }}
-          >
-            <Bike size={16} color={forFriend ? theme.green : '#9ca3af'} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: forFriend ? theme.green : '#6b7280' }}>
-              {forFriend ? "Delivering for someone else ✓" : "This delivery is for someone else"}
-            </span>
-          </button>
-
-          {forFriend && (
-            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-              <input
-                value={recipientName}
-                onChange={(e) => setRecipientName(e.target.value)}
-                placeholder="Recipient's name"
-                style={inputStyle}
-              />
-              <input
-                value={recipientPhone}
-                onChange={(e) => setRecipientPhone(e.target.value)}
-                placeholder="Recipient's phone"
-                style={inputStyle}
-              />
-            </div>
-          )}
+            
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 14,
