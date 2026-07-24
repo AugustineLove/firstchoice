@@ -194,9 +194,9 @@ export default function CustomerHome() {
 
           <div className="fc-topbar__hero">
             <div className="fc-topbar__greeting">
-              Hello, {firstName} <span aria-hidden="true">👋</span>
+              Yo, {firstName} <span aria-hidden="true">👋</span>
             </div>
-            <div className="fc-topbar__subtitle">What would you like today?</div>
+            <div className="fc-topbar__subtitle">Just few taps, we don land!</div>
           </div>
         </div>
 
