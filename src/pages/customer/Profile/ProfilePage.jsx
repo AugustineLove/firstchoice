@@ -1,8 +1,8 @@
 'use client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Bike, Bell, LogOut, ChevronRight, Phone, Mail } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { ArrowLeft, ShoppingBag, Bike, Bell, LogOut, User, ChevronRight, Phone, Mail } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -32,6 +32,7 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0', overflow: 'hidden', marginBottom: 16 }}>
+          <MenuRow icon={<User size={17} color={theme.green} />} label="Edit Profile" onClick={() => navigate('/profile/edit')} />
           <MenuRow icon={<ShoppingBag size={17} color={theme.green} />} label="My Orders" onClick={() => navigate('/orders')} />
           <MenuRow icon={<Bike size={17} color={theme.green} />} label="My Deliveries" onClick={() => navigate('/deliveries')} />
           <MenuRow icon={<Bell size={17} color={theme.green} />} label="Notifications" onClick={() => navigate('/notifications')} last />

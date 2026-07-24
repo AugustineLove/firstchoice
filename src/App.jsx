@@ -22,13 +22,14 @@ import CheckoutPage from './pages/customer/CheckoutPage'
 import OrdersPage from './pages/customer/OrdersPage'
 import OrderTrackingPage from './pages/customer/OrderTrackingPage'
 import DeliveriesPage from './pages/customer/DeliveriesPage'
-import ProfilePage from './pages/customer/ProfilePage'
+import ProfilePage from './pages/customer/Profile/ProfilePage'
 import NotificationsPage from './pages/customer/NotificationsPage'
 import CustomerHome from './pages/customer/CustomerHome'
 import CustomerShell from './components/CustomerShell'
 import NotificationToast from './components/NotificationToast'
 import InstallPrompt from './components/InstallPrompt'
 import { useNotifications } from './providers/useNotifications'
+import ProfileEditPage from './pages/customer/Profile/ProfileEditingPage'
 
 export default function App() {
   const { toast, dismissToast, openToast } = useNotifications();
@@ -95,6 +96,7 @@ export default function App() {
                 <Route path="/orders"        element={<OrdersPage />} />
                 <Route path="/deliveries"    element={<DeliveriesPage />} />
                 <Route path="/profile"       element={<ProfilePage />} />
+                <Route path="/profile/edit"       element={<ProfileEditPage />} />
               </Route>
 
               {/* Customer — pushed on top, no bottom nav (mirrors mobile's

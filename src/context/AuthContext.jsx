@@ -11,7 +11,6 @@ export function AuthProvider({ children }) {
   const [refresh, setRefresh] = useState(() => localStorage.getItem('fc_refresh') || null);
   const [loading, setLoading] = useState(true);
 
-  /* ── Persist tokens ── */
   useEffect(() => {
     if (token)   localStorage.setItem('fc_token', token);
     else         localStorage.removeItem('fc_token');
@@ -19,7 +18,6 @@ export function AuthProvider({ children }) {
     else         localStorage.removeItem('fc_refresh');
   }, [token, refresh]);
 
-  /* ── Load user on mount if token exists ── */
   useEffect(() => {
     if (!token) { setLoading(false); return; }
     fetchMe(token);
@@ -40,7 +38,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  /* ── Login ── */
   async function login(phone, password) {
     const res  = await fetch(`${API}/auth/login`, {
       method:  'POST',
@@ -56,7 +53,6 @@ export function AuthProvider({ children }) {
     return data.data.user;
   }
 
-  /* ── Register ── */
   async function register(payload) {
     const res  = await fetch(`${API}/auth/register`, {
       method:  'POST',
@@ -72,7 +68,6 @@ export function AuthProvider({ children }) {
     return data.data.user;
   }
 
-  /* ── Refresh access token ── */
   const refreshToken = useCallback(async () => {
     if (!refresh) throw new Error('No refresh token');
     const res  = await fetch(`${API}/auth/refresh`, {
@@ -86,30 +81,27 @@ export function AuthProvider({ children }) {
     return data.data.accessToken;
   }, [refresh]);
 
-  /* ── Authenticated fetch wrapper ── */
+  /* ── Authenticated fetch wrapper ──
+     Skips forcing Content-Type when the body is FormData so the browser
+     can set the correct multipart boundary itself. */
   const authFetch = useCallback(async (path, options = {}) => {
-    let t = token;
-    let res = await fetch(`${API}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${t}`,
-        ...(options.headers || {}),
-      },
-    });
+    const isFormData = options.body instanceof FormData;
 
-    /* Auto-refresh on 401 */
+    function buildHeaders(t) {
+      const headers = { Authorization: `Bearer ${t}`, ...(options.headers || {}) };
+      if (!isFormData && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return headers;
+    }
+
+    let t = token;
+    let res = await fetch(`${API}${path}`, { ...options, headers: buildHeaders(t) });
+
     if (res.status === 401) {
       try {
         t = await refreshToken();
-        res = await fetch(`${API}${path}`, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${t}`,
-            ...(options.headers || {}),
-          },
-        });
+        res = await fetch(`${API}${path}`, { ...options, headers: buildHeaders(t) });
       } catch {
         logout();
         throw new Error('Session expired. Please log in again.');
@@ -118,6 +110,10 @@ export function AuthProvider({ children }) {
     return res;
   }, [token, refreshToken]);
 
+  function updateUser(patch) {
+    setUser((prev) => (prev ? { ...prev, ...patch } : patch));
+  }
+
   function logout() {
     setUser(null);
     setToken(null);
@@ -125,7 +121,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, authFetch }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, authFetch, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

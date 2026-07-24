@@ -84,7 +84,7 @@ No pepper please`;
 2kg Rice
 1 Crate of Eggs
 1 Bottle Cooking Oil
-3 Tomatoes`;
+3 tin tomatoes`;
 
     case 'Pharmacy':
       return `List the medicines or health products you need, e.g.

@@ -3,10 +3,10 @@
   "name": "FirstChoice",
   "description": "Order deliveries, food, and groceries from vendors in Agona Nkwanta.",
   "icons": [
-    { "src": "/icons/logo.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
-    { "src": "/icons/logo-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
-    { "src": "/icons/logo.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
-    { "src": "/icons/logo-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+    { "src": "/icons/logo-bg.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icons/logo-bg-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "/icons/logo-bg.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icons/logo-bg-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
   "start_url": "/home?source=pwa",
   "id": "/home?source=pwa",
