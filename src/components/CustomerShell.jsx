@@ -102,7 +102,7 @@ export default function CustomerShell() {
               left: 0;
               right: 0;
               z-index: 50;
-              height: 84px;
+              height: 70px;
               padding-bottom: env(safe-area-inset-bottom, 0px);
             }
 
@@ -113,7 +113,7 @@ export default function CustomerShell() {
               right: 0;
               width: 100%;
               height: calc(100% + 30px);
-              box-shadow: 0 -6px 18px rgba(0,0,0,0.14);
+              // box-shadow: 0 -6px 18px rgba(0,0,0,0.14);
             }
 
             .fc-tabbar__hill path {
