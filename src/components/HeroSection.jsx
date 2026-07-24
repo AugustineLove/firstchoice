@@ -1,6 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 function DeliveryIllustration({ theme }) {
   return (
@@ -145,6 +146,7 @@ function FloatCard({ style, icon, title, sub, badgeText, badgeColor, badgeBg, th
 
 export default function HeroSection() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
 
   const scrollTo = (href) => {
     const el = document.querySelector(href);
@@ -198,8 +200,9 @@ export default function HeroSection() {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = theme.greenMid; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = theme.green; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onClick={() => navigate('/login')}
             >
-              Download the App →
+              Login →
             </button>
             <button
               onClick={() => scrollTo('#how')}
