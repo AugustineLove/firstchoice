@@ -19,7 +19,7 @@ const STATUS_STYLE = {
 ════════════════════════════════════════════ */
 export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
   if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
-
+  console.log(pickupLat, pickupLng)
   const r = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
 
@@ -318,21 +318,21 @@ export default function DeliveriesPage() {
             {destLocationError && <InlineError message={destLocationError} />}
 
             <Field label="ITEM DESCRIPTION" icon={<Package size={15} color="#8b5cf6" />}>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-                placeholder="e.g. Documents, a small package..."
-                style={{ ...textareaStyle }}
-              />
-            </Field>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="e.g. Documents, a small package..."
+              style={{ ...textareaStyle }}
+            />
+          </Field>
 
             <Field label="ADDITIONAL NOTES?" icon={<Package size={15} color="#8b5cf6" />}>
               <textarea
                 value={extraNote}
                 onChange={(e) => setExtraNote(e.target.value)}
                 rows={2}
-                placeholder="e.g. Any special information for driver..."
+                placeholder="e.g. Any special information for rider..."
                 style={{ ...textareaStyle }}
               />
             </Field>

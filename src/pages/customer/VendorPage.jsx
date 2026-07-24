@@ -69,6 +69,52 @@ export default function VendorPage() {
   const submittingRef = useRef(false);
 
 
+
+  const getPlaceholder = () => {
+  switch (vendor?.businessType) {
+    case 'Food':
+      return `List everything you'd like, e.g.
+2x Jollof Rice (Large)
+1x Grilled Chicken
+1x Bottled Water
+No pepper please`;
+
+    case 'Grocery':
+      return `List your grocery items, e.g.
+2kg Rice
+1 Crate of Eggs
+1 Bottle Cooking Oil
+3 Tomatoes`;
+
+    case 'Pharmacy':
+      return `List the medicines or health products you need, e.g.
+Paracetamol 500mg
+Vitamin C
+Dettol 500ml
+(Include prescription if required)`;
+
+    case 'Boutique':
+      return `Describe the clothing or fashion items, e.g.
+Black T-shirt (Large)
+Blue Jeans Size 34
+White Sneakers Size 43`;
+
+    case 'Electronics':
+      return `Describe the electronic item, e.g.
+Samsung 25W Charger
+Type-C Cable (1m)
+Wireless Mouse
+HP Laptop Bag`;
+
+    default:
+      return `Describe what you'd like us to get for you, e.g.
+Documents
+Small Package
+Birthday Gift
+Any special instructions`;
+  }
+};
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -273,7 +319,7 @@ export default function VendorPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={6}
-              placeholder="List everything you'd like, e.g.&#10;2x Jollof rice (large)&#10;1x Bottled water&#10;No pepper please"
+              placeholder={getPlaceholder()}
               style={{
                 width: '100%', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, fontFamily: 'inherit',
                 fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',

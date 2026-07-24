@@ -35,6 +35,9 @@ export default function ProfilePage() {
           <MenuRow icon={<ShoppingBag size={17} color={theme.green} />} label="My Orders" onClick={() => navigate('/orders')} />
           <MenuRow icon={<Bike size={17} color={theme.green} />} label="My Deliveries" onClick={() => navigate('/deliveries')} />
           <MenuRow icon={<Bell size={17} color={theme.green} />} label="Notifications" onClick={() => navigate('/notifications')} last />
+          <a href={`https://whatsapp.com/channel/0029VbDE8FF6GcGDW0NETC39`} style={{
+                padding: 10, background: theme.green, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+              }}>Tap to follow our WhatsApp channel</a>
         </div>
 
         <button onClick={() => { logout(); navigate('/login'); }} style={{

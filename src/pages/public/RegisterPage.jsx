@@ -47,7 +47,7 @@ export default function RegisterPage() {
       // after admin approval (vendor) or right away (rider)
       if (type === 'vendor')   navigate('/vendor/onboarding');
       else if (type === 'rider') navigate('/rider/onboarding');
-      else                       navigate('/');
+      else                       navigate('/login');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

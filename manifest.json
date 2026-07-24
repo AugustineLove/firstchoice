@@ -1,12 +1,12 @@
 {
   "short_name": "FirstChoice",
-  "name": "FirstChoice — Delivery & Marketplace",
+  "name": "FirstChoice",
   "description": "Order deliveries, food, and groceries from vendors in Agona Nkwanta.",
   "icons": [
-    { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
-    { "src": "/icons/icon-192-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
-    { "src": "/icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
-    { "src": "/icons/icon-512-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+    { "src": "/icons/logo.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icons/logo-maskable.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "/icons/logo.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icons/logo-maskable.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
   ],
   "start_url": "/home?source=pwa",
   "id": "/home?source=pwa",

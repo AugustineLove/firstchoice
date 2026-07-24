@@ -11,7 +11,6 @@ const CATEGORIES = [
   { label: 'Food',        icon: '🍛', value: 'Food',        bg: '#FFEDD5', fg: '#EA580C' },
   { label: 'Grocery',     icon: '🛒', value: 'Grocery',     bg: '#DCFCE7', fg: '#16A34A' },
   { label: 'Pharmacy',    icon: '💊', value: 'Pharmacy',    bg: '#DBEAFE', fg: '#2563EB' },
-  { label: 'Boutique',    icon: '👗', value: 'Boutique',    bg: '#FCE7F3', fg: '#DB2777' },
   { label: 'Electronics', icon: '📱', value: 'Electronics', bg: '#EDE9FE', fg: '#7C3AED' },
 ];
 
@@ -488,7 +487,7 @@ export default function CustomerHome() {
           <>
             {!loading && popular.length > 0 && (
               <RailSection
-                title="Popular Restaurants"
+                title="Popular"
                 icon={<Flame size={16} color="#f97316" />}
                 items={popular}
                 onItemClick={(v) => navigate(`/vendor/${v.id}`)}
