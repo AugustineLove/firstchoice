@@ -366,7 +366,7 @@ export default function CustomerHome() {
           .fc-topbar__subtitle {
             margin-top: 4px;
             font-size: clamp(12.5px, 2.8vw, 14px);
-            color: rgba(255,255,255,0.78);
+            color: #f6c453;
             font-weight: 500;
           }
 
