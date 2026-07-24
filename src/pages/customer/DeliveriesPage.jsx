@@ -354,7 +354,7 @@ const canSubmit = hasPickup && hasDest && description.trim() && friendDetailsVal
               <input
                 value={recipientPhone}
                 onChange={(e) => setRecipientPhone(e.target.value)}
-                placeholder="Recipient's phone"
+                placeholder="Recipient's phone number"
                 style={inputStyle}
               />
             </div>
