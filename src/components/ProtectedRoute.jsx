@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
  
 export default function ProtectedRoute({ children, roles = [] }) {
   const { user, loading } = useAuth();
-  console.log(user);
   if (loading) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
       <Loader2 size={28} style={{ animation:'spin 1s linear infinite', color:'#10b981' }}/>

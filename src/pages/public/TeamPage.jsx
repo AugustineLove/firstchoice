@@ -7,59 +7,54 @@ import Navbar from '../../components/Navbar';
 
 const TEAM = [
   {
-    initials: 'AS',
-    name: 'Austin Stephens',
-    role: 'Co-Founder & CEO',
-    bio: 'Logistics entrepreneur with 8 years building supply chains across Ghana. Grew up in Agona Nkwanta and came back to solve the town\'s commerce gap.',
-    tags: ['Strategy', 'Operations', 'Partnerships'],
+    initials: 'KS',
+    name: 'Kweku Stephens',
+    role: 'Chief Executive Officer (CEO)',
+    bio: "An Information Technology professional from the University of Ghana with a passion for solving everyday challenges through technology. Austin leads the company's vision, strategy, and partnerships, driving FirstChoice Express toward becoming the leading on-demand delivery platform in Ghana.",
+    tags: ['Leadership', 'Strategy', 'Partnerships'],
     colorKey: 'green',
     social: { twitter: '#', linkedin: '#' },
   },
+
   {
-    initials: 'CN',
-    name: 'Collin Narh',
-    role: 'Co-Founder & COO',
-    bio: 'Former operations lead at a Accra-based e-commerce startup. Obsessed with last-mile delivery and community-first business models.',
-    tags: ['Operations', 'Rider Network', 'Quality'],
+    initials: 'OO',
+    name: 'Oscar Stephens',
+    role: 'Chief Operating Officer (COO)',
+    bio: 'An Information Technology professional from Takoradi Technical University responsible for overseeing daily operations, logistics coordination, and ensuring smooth service delivery across the FirstChoice Express network.',
+    tags: ['Operations', 'Logistics', 'Management'],
     colorKey: 'greenMid',
-    social: { twitter: '#', linkedin: '#' },
+    social: { linkedin: '#' },
   },
+
+  {
+  initials: 'CN',
+  name: 'Collins Narh',
+  role: 'Project Coordinator',
+  bio: 'A dedicated member of the FirstChoice Express team who plays a key role in driving the project forward. Collins helps coordinate activities, supports team operations, and ensures plans are turned into action as the company continues to grow.',
+  tags: ['Coordination', 'Execution', 'Team Support'],
+  colorKey: 'greenLight',
+  social: { linkedin: '#' },
+},
+
   {
     initials: 'AL',
     name: 'Augustine Love',
-    role: 'Head of Technology',
-    bio: 'Full-stack engineer and mobile developer. Built the entire FirstChoice platform from scratch. Passionate about technology serving local economies.',
-    tags: ['React Native', 'Node.js', 'Systems'],
+    role: 'Chief Technology Officer (CTO)',
+    bio: "A Computer Science graduate from the University of Ghana and the lead architect behind the FirstChoice Express platform. Augustine designed and developed the mobile apps, backend infrastructure, and web systems that power the company's services.",
+    tags: ['Flutter', 'Node.js', 'System Architecture'],
     colorKey: 'amber',
-    social: { twitter: '#', linkedin: '#', github: '#' },
+    social: { github: '#', linkedin: '#' },
   },
+
   {
-    initials: 'EA',
-    name: 'Efua Asante',
-    role: 'Head of Vendor Growth',
-    bio: 'Former regional sales manager who has onboarded over 50 local businesses onto the platform. Knows every vendor in Agona Nkwanta by name.',
-    tags: ['Vendor Relations', 'Sales', 'Growth'],
-    colorKey: 'greenLight',
-    social: { linkedin: '#' },
-  },
-  {
-    initials: 'KO',
-    name: 'Kwabena Osei',
-    role: 'Rider Operations Lead',
-    bio: 'Started as a rider himself before taking on operations. Manages the entire dispatch network and rider onboarding program across zones.',
-    tags: ['Dispatch', 'Training', 'Fleet'],
-    colorKey: 'greenMid',
-    social: { linkedin: '#' },
-  },
-  // {
-  //   initials: 'AK',
-  //   name: 'Afia Kusi',
-  //   role: 'Design & Brand',
-  //   bio: 'Visual designer and UX strategist. Responsible for every pixel of the FirstChoice experience — from the app to the riders\' uniforms.',
-  //   tags: ['UI/UX', 'Brand', 'Motion'],
-  //   colorKey: 'amber',
-  //   social: { twitter: '#', linkedin: '#' },
-  // },
+  initials: 'IB',
+  name: 'Isaac Brace',
+  role: 'Head of Sales & Marketing',
+  bio: 'A Business Administration student at Takoradi Technical University with a passion for entrepreneurship and brand growth. Isaac leads sales and marketing initiatives, helping expand FirstChoice Express through customer engagement, strategic campaigns, and strong relationships with local businesses.',
+  tags: ['Sales', 'Marketing', 'Business Development'],
+  colorKey: 'greenMid',
+  social: { linkedin: '#' },
+},
 ];
 
 const VALUES = [
@@ -86,11 +81,11 @@ const VALUES = [
 ];
 
 const TIMELINE = [
-  { year: 'Jan 2024', label: 'Idea Born', desc: 'Kofi and Abena sketch FirstChoice on a notebook at a chop bar in Agona Nkwanta.' },
-  { year: 'Mar 2024', label: 'First Rider', desc: '3 riders. 12 orders in week one. Delivered every single one on time.' },
-  { year: 'Jun 2024', label: 'Platform Launch', desc: 'Yaw ships the full app. Vendors start getting digital orders for the first time.' },
-  { year: 'Sep 2024', label: '50+ Vendors', desc: 'Half the town\'s businesses are now on FirstChoice. 200+ deliveries completed.' },
-  { year: '2025', label: 'Expansion', desc: 'Adjacent towns. Smarter dispatch. Inter-town delivery routes go live.' },
+  { year: 'Jan 2025', label: 'Idea Born', desc: 'We sketched FirstChoice on a notebook at a small shop in Agona Nkwanta.' },
+  { year: 'June 2026', label: 'First Rider', desc: '3 riders. 12 orders in week one. Delivered every single one on time.' },
+  { year: 'July 2026', label: 'Platform Launch', desc: 'We shipped the full app. Vendors start getting digital orders for the first time.' },
+  { year: 'August 2026', label: '30+ Vendors', desc: 'We hoping half the town\'s businesses will be on FirstChoice. 200+ deliveries to be completed.' },
+  { year: '2026 Ending', label: 'Expansion', desc: 'Adjacent towns. Smarter dispatch. Inter-town delivery routes go live.' },
 ];
 
 // ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
@@ -227,17 +222,17 @@ export default function TeamPage() {
               commerce in Ghana.
             </h1>
             <p style={{ fontSize: 17, color: theme.muted, lineHeight: 1.8, maxWidth: 480 }}>
-              FirstChoice started as a napkin sketch at a chop bar in Agona Nkwanta. Today it's a growing team of builders, riders, and community operators on a mission to bring world-class logistics to every town in Ghana.
+              FirstChoice started as a napkin sketch at a small shop in Agona Nkwanta. Today it's a growing team of builders, riders, and community operators on a mission to bring world-class logistics to every town in Ghana.
             </p>
           </div>
 
           {/* Stats block */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {[
-              { num: '6', label: 'Core Team', sub: 'Builders & operators' },
-              { num: '50+', label: 'Vendors', sub: 'On the platform' },
-              { num: '15+', label: 'Active Riders', sub: 'Across all zones' },
-              { num: '2024', label: 'Founded', sub: 'Agona Nkwanta, GH' },
+              { num: '5', label: 'Core Team', sub: 'Builders & operators' },
+              { num: '20+', label: 'Vendors', sub: 'On the platform' },
+              { num: '5+', label: 'Active Riders', sub: 'Across all zones' },
+              { num: '2026', label: 'Founded', sub: 'Agona Nkwanta, GH' },
             ].map((s) => (
               <div key={s.label} style={{
                 background: '#fff', border: `1px solid ${theme.border}`,
@@ -342,7 +337,7 @@ export default function TeamPage() {
           <SectionHeader
             label="The Team"
             title={<>Meet the <em style={{ fontStyle: 'normal', color: theme.green }}>Builders</em></>}
-            sub="Six people with one shared obsession: making local commerce work beautifully."
+            sub="Five people with one shared obsession: making local commerce work beautifully."
             theme={theme}
           />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 22 }} className="team-grid">

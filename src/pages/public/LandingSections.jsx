@@ -58,18 +58,18 @@ export function PartnersSection() {
 const TESTIMONIALS = [
   {
     stars: 5,
-    text: 'FirstChoice has completely changed how I run my chop bar. I get orders on my phone and riders pick them up. My sales have doubled in two months!',
-    name: 'Abena Acheampong', role: "Vendor — Abena's Kitchen", initials: 'AA', colorKey: 'green',
+    text: 'FirstChoice has completely changed how I run my food joint. I get orders on my phone and riders pick them up. My sales have doubled in two months!',
+    name: 'Jennifer Samevi', role: "Shalom Fast Food", initials: 'AA', colorKey: 'green',
   },
   {
     stars: 5,
     text: 'I can send a package from the market to my house without leaving work. The rider arrived in 15 minutes. Very reliable!',
-    name: 'Kwame Osei', role: 'Customer — Agona Nkwanta', initials: 'KO', colorKey: 'amber',
+    name: 'Janet Ninson', role: 'Customer — Agona Nkwanta', initials: 'KO', colorKey: 'amber',
   },
   {
     stars: 5,
     text: "As a rider, I earn more with FirstChoice than any other work I've done. Easy app, helpful support, and payments are always fair.",
-    name: 'Yaw Asante', role: 'Rider — 150+ deliveries', initials: 'YA', colorKey: 'greenMid',
+    name: 'Benedict Ekrah Brace', role: 'Rider — 150+ deliveries', initials: 'YA', colorKey: 'greenMid',
   },
 ];
 
@@ -237,7 +237,7 @@ export function AboutSection() {
             We're not just a delivery app. We're building the digital commerce layer for local economies — connecting riders, vendors, and customers in one trusted ecosystem.
           </p>
           <div style={{ display: 'flex', gap: 36 }}>
-            {[['2024', 'Founded'], ['5+', 'Towns Soon'], ['100%', 'Local-First']].map(([num, label]) => (
+            {[['2026', 'Founded'], ['2+', 'Towns Soon'], ['100%', 'Local-First']].map(([num, label]) => (
               <div key={label}>
                 <div style={{ fontSize: 32, fontWeight: 900, color: theme.green }}>{num}</div>
                 <div style={{ fontSize: 12, color: theme.muted, marginTop: 2 }}>{label}</div>

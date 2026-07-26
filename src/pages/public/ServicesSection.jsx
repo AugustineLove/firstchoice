@@ -4,7 +4,7 @@ const SERVICES = [
     title: 'Marketplace Ordering',
     desc: 'Browse and order from food vendors, pharmacies, grocery stores, boutiques, and more. Full menus, live availability, real-time order tracking.',
     tag: 'Customers & Vendors',
-    style: { background: 'var(--fg)', color: 'white' },
+    style: { background: 'var(--dark)', color: 'white' },
     tagStyle: { background: 'rgba(255,255,255,0.18)', color: 'white' },
   },
   {

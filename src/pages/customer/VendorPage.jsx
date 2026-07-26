@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Star, MapPin, Clock, Loader2, Send, CheckCircle2, Package,
-  Search, X, LocateFixed, User,
+  Search, X, LocateFixed, User, Plus, Minus, ChevronRight, Check, MessageSquareText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -17,12 +17,24 @@ const TYPE_STYLE = {
   electronics: { emoji: '📱', a: '#6366F1', b: '#818CF8' },
 };
 
-// NOTE ON THE FLOW BELOW: products are shown for browsing/reference only —
-// tapping one drops a line into the order note as a shortcut. The order
-// itself is a single free-text note, submitted to POST /orders along with
-// a compulsory delivery location and an optional "for a friend" recipient.
-// The backend also still accepts the old structured items[] flow — this
-// screen just doesn't build that payload.
+// NOTE ON THE FLOW BELOW: products are shown for browsing/reference —
+// tapping one either (a) drops a simple line into the order note, if it
+// has no variants/addons, or (b) opens the options picker so the customer
+// can choose a variant (size, weight...) and any addons (extras) before a
+// fully-priced, human-readable line gets appended to the note. The order
+// itself is still a single free-text note submitted to POST /orders along
+// with a compulsory delivery location and an optional "for a friend"
+// recipient — this screen never builds a structured items[] payload.
+
+function money(n) {
+  return `GHS ${Number(n || 0).toFixed(2)}`;
+}
+
+// A GHS 0.00 addon is a genuinely free perk, not "nothing" — label it as such.
+function addonPriceLabel(price) {
+  const p = Number(price || 0);
+  return p === 0 ? 'Free' : `+${money(p)}`;
+}
 
 function filterLocations(all, query) {
   if (!query.trim()) return all;
@@ -43,13 +55,20 @@ export default function VendorPage() {
 
   const [note, setNote] = useState('');
 
+  // Running, informational-only total of everything added through the
+  // product picker / quick-add. The real total is still set by the vendor
+  // once they read the note — this is just so the customer isn't typing
+  // blind while building a long order.
+  const [pickedTotal, setPickedTotal] = useState(0);
+  const [pickedCount, setPickedCount] = useState(0);
+
+  // ── product options picker ──
+  const [activeProduct, setActiveProduct] = useState(null);
+
   // ── delivery location (compulsory) ──
-  // Loaded quietly in the background on mount — this is just data-fetching,
-  // it never touches focus/the keyboard. Only the picker UI itself opens
-  // on tap; see LocationPicker below for the actual fix.
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(true);
-  const [destination, setDestination] = useState(null); // saved location | null
+  const [destination, setDestination] = useState(null);
   const [usingCurrentLocation, setUsingCurrentLocation] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [locating, setLocating] = useState(false);
@@ -72,60 +91,59 @@ export default function VendorPage() {
   const [orderImagePreview, setOrderImagePreview] = useState(null);
   const orderImageInputRef = useRef(null);
 
+  // ── vendor rating ──
+  const [ratingSummary, setRatingSummary] = useState(null); // { average, count, myRating }
+  const [loadingRating, setLoadingRating] = useState(true);
+  const [rateModalOpen, setRateModalOpen] = useState(false);
+
   function handleOrderImageSelect(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { setSubmitError('Please select an image file'); return; }
-  if (file.size > 5 * 1024 * 1024) { setSubmitError('Image must be under 5MB'); return; }
-  setOrderImage(file);
-  setOrderImagePreview(URL.createObjectURL(file));
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setSubmitError('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { setSubmitError('Image must be under 5MB'); return; }
+    setOrderImage(file);
+    setOrderImagePreview(URL.createObjectURL(file));
   }
 
-
   const getPlaceholder = () => {
-  switch (vendor?.businessType) {
-    case 'Food':
-      return `List everything you'd like, e.g.
+    switch (vendor?.businessType) {
+      case 'Food':
+        return `List everything you'd like, e.g.
 2x Jollof Rice (Large)
 1x Grilled Chicken
 1x Bottled Water
 No pepper please`;
-
-    case 'Grocery':
-      return `List your grocery items, e.g.
+      case 'Grocery':
+        return `List your grocery items, e.g.
 2kg Rice
 1 Crate of Eggs
 1 Bottle of Cooking Oil
 3 Tin tomatoes`;
-
-    case 'Pharmacy':
-      return `List the medicines or health products you need, e.g.
+      case 'Pharmacy':
+        return `List the medicines or health products you need, e.g.
 Paracetamol 500mg
 Vitamin C
 Dettol 500ml
 (Include prescription if required)`;
-
-    case 'Boutique':
-      return `Describe the clothing or fashion items, e.g.
+      case 'Boutique':
+        return `Describe the clothing or fashion items, e.g.
 Black T-shirt (Large)
 Blue Jeans Size 34
 White Sneakers Size 43`;
-
-    case 'Electronics':
-      return `Describe the electronic item, e.g.
+      case 'Electronics':
+        return `Describe the electronic item, e.g.
 Samsung 25W Charger
 Type-C Cable (1m)
 Wireless Mouse
 HP Laptop Bag`;
-
-    default:
-      return `Describe what you'd like us to get for you, e.g.
+      default:
+        return `Describe what you'd like us to get for you, e.g.
 Documents
 Small Package
 Birthday Gift
 Any special instructions`;
-  }
-};
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,8 +174,21 @@ Any special instructions`;
     setLoadingLocations(false);
   }, [authFetch]);
 
+  const loadRatingSummary = useCallback(async () => {
+    setLoadingRating(true);
+    try {
+      const res = await authFetch(`/vendors/${id}/rating/summary`);
+      const json = await res.json();
+      if (json.success) setRatingSummary(json.data);
+    } catch {
+      // non-fatal — the hero still shows vendor.rating
+    }
+    setLoadingRating(false);
+  }, [authFetch, id]);
+
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadLocations(); }, [loadLocations]);
+  useEffect(() => { loadRatingSummary(); }, [loadRatingSummary]);
 
   const style = TYPE_STYLE[vendor?.businessType?.toLowerCase()] || { emoji: '🏪', a: '#10B981', b: '#34D399' };
 
@@ -168,15 +199,32 @@ Any special instructions`;
   const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
   const hasDeliveryLocation = usingCurrentLocation ? !!currentPosition : !!destination;
 
-  function addProductToNote(product) {
-    setNote((prev) => {
-      const line = `1x ${product.name} (GHS ${product.price?.toFixed(2)})`;
-      if (!prev.trim()) return line;
-      return `${prev.trim()}\n${line}`;
-    });
+  function appendNoteLine(line, lineTotal) {
+    setNote((prev) => (!prev.trim() ? line : `${prev.trim()}\n${line}`));
+    setPickedTotal((t) => t + lineTotal);
+    setPickedCount((c) => c + 1);
   }
 
-  console.log(`Vendor: ${vendor}`)
+  // Quick-add: only reached for products with no variants and no addons.
+  function addProductToNote(product) {
+    const line = `1x ${product.name} — ${money(product.price)}`;
+    appendNoteLine(line, product.price || 0);
+  }
+
+  function productHasOptions(product) {
+    const hasVariants = (product.variantGroups || []).some(g => (g.variants || []).some(v => v.available !== false));
+    console.log(hasVariants);
+    const hasAddons   = (product.addonGroups   || []).some(g => (g.addons   || []).some(a => a.available !== false));
+    return hasVariants || hasAddons;
+  }
+
+  function handleProductTap(product) {
+    if (productHasOptions(product)) {
+      setActiveProduct(product);
+    } else {
+      addProductToNote(product);
+    }
+  }
 
   function useCurrentLocation() {
     if (!('geolocation' in navigator)) {
@@ -203,62 +251,82 @@ Any special instructions`;
   const friendDetailsValid = !forFriend || (recipientName.trim() && recipientPhone.trim());
   const canSubmit = note.trim() && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
 
-      async function submitOrder() {
-      if (!canSubmit || submittingRef.current) return;
-      submittingRef.current = true;
-      setSubmitting(true);
-      setSubmitError(null);
-      try {
-        const res = await authFetch('/orders', {
-          method: 'POST',
-          body: JSON.stringify({
-            vendorId: id,
-            note: note.trim(),
-            deliveryAddress: destAddress,
-            deliveryLatitude: destLat,
-            deliveryLongitude: destLng,
-            paymentMethod: payment,
-            ...(forFriend ? {
-              recipientName: recipientName.trim(),
-              recipientPhone: recipientPhone.trim(),
-            } : {}),
-          }),
-        });
-        const json = await res.json();
-        if (!json.success) {
-          setSubmitError(json.message || 'Could not submit your order.');
-          submittingRef.current = false;
-          setSubmitting(false);
-          return;
-        }
-
-        // Image is optional and best-effort — a failed upload shouldn't block a successfully placed order
-        if (orderImage) {
-          try {
-            const fd = new FormData();
-            fd.append('image', orderImage);
-            await authFetch(`/orders/${json.data.order.id}/image`, { method: 'POST', body: fd });
-          } catch {
-            // silently ignore — order already exists
-          }
-        }
-
-        setSubmitted(true);
-        setNote('');
-        setDestination(null);
-        setUsingCurrentLocation(false);
-        setCurrentPosition(null);
-        setForFriend(false);
-        setRecipientName('');
-        setRecipientPhone('');
-        setOrderImage(null);
-        setOrderImagePreview(null);
-      } catch {
-        setSubmitError('Could not reach the server.');
+  async function submitOrder() {
+    if (!canSubmit || submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await authFetch('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          vendorId: id,
+          note: note.trim(),
+          deliveryAddress: destAddress,
+          deliveryLatitude: destLat,
+          deliveryLongitude: destLng,
+          paymentMethod: payment,
+          ...(forFriend ? {
+            recipientName: recipientName.trim(),
+            recipientPhone: recipientPhone.trim(),
+          } : {}),
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setSubmitError(json.message || 'Could not submit your order.');
+        submittingRef.current = false;
+        setSubmitting(false);
+        return;
       }
-      submittingRef.current = false;
-      setSubmitting(false);
+
+      if (orderImage) {
+        try {
+          const fd = new FormData();
+          fd.append('image', orderImage);
+          await authFetch(`/orders/${json.data.order.id}/image`, { method: 'POST', body: fd });
+        } catch {
+          // silently ignore — order already exists
+        }
+      }
+
+      setSubmitted(true);
+      setNote('');
+      setPickedTotal(0);
+      setPickedCount(0);
+      setDestination(null);
+      setUsingCurrentLocation(false);
+      setCurrentPosition(null);
+      setForFriend(false);
+      setRecipientName('');
+      setRecipientPhone('');
+      setOrderImage(null);
+      setOrderImagePreview(null);
+    } catch {
+      setSubmitError('Could not reach the server.');
     }
+    submittingRef.current = false;
+    setSubmitting(false);
+  }
+
+  async function submitVendorRating(stars, comment) {
+    const res = await authFetch(`/vendors/${id}/rating`, {
+      method: 'POST',
+      body: JSON.stringify({ rating: stars, comment }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message || 'Could not submit your rating.');
+    // Optimistically fold the new vote into the summary we already have.
+    setRatingSummary((prev) => {
+      const prevAvg = prev?.average ?? 0;
+      const prevCount = prev?.count ?? 0;
+      const newCount = prevCount + 1;
+      const newAvg = (prevAvg * prevCount + stars) / newCount;
+      return { average: Number(newAvg.toFixed(2)), count: newCount, myRating: { rating: stars, comment } };
+    });
+    setVendor((v) => (v ? { ...v, rating: ratingSummary ? ratingSummary.average : v.rating } : v));
+    return json;
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 40 }}>
@@ -281,10 +349,15 @@ Any special instructions`;
           <div className="vp-hero__content">
             <div className="vp-hero__toprow">
               <span className="vp-hero__type">{vendor.businessType}</span>
-              <span className="vp-hero__rating">
+              <button
+                type="button"
+                className="vp-hero__rating"
+                onClick={() => document.getElementById('vp-ratings-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
                 <Star size={13} fill="#f59e0b" color="#f59e0b" />
-                {(vendor.rating ?? 0).toFixed(1)}
-              </span>
+                {(ratingSummary?.average ?? vendor.rating ?? 0).toFixed(1)}
+                {ratingSummary?.count ? <span style={{ opacity: 0.85, fontWeight: 600 }}>({ratingSummary.count})</span> : null}
+              </button>
             </div>
             <h1 className="vp-hero__name">{vendor.businessName}</h1>
             <div className="vp-hero__meta">
@@ -305,9 +378,11 @@ Any special instructions`;
           <p style={{ fontSize: 13, color: '#6b7280', margin: '14px 0 0', lineHeight: 1.5 }}>{vendor.description}</p>
         )}
 
-        {/* ── PRODUCTS (reference only — tap to drop into the order note) ── */}
+        {/* ── PRODUCTS ── */}
         <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '20px 0 6px' }}>Available Products</h2>
-        <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>Tap an item to add it to your order note below</p>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>
+          Tap an item — if it has sizes or extras you'll get to choose, otherwise it's added straight away
+        </p>
 
         {loading && (
           <div className="vp-product-grid">
@@ -322,7 +397,7 @@ Any special instructions`;
         {!loading && products.length > 0 && (
           <div className="vp-product-grid" style={{ marginBottom: 8 }}>
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} onClick={() => addProductToNote(p)} />
+              <ProductCard key={p.id} product={p} hasOptions={productHasOptions(p)} onClick={() => handleProductTap(p)} />
             ))}
           </div>
         )}
@@ -354,42 +429,59 @@ Any special instructions`;
               }}
             />
 
-            <div style={{ margin: '12px 0 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-            <Package size={15} color="#9ca3af" />
-            ATTACH A PHOTO <span style={{ fontWeight: 500, color: '#9ca3af' }}>(optional)</span>
-          </div>
+            {pickedCount > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8,
+                padding: '8px 12px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0',
+              }}>
+                <span style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                  {pickedCount} item{pickedCount !== 1 ? 's' : ''} added from the menu
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>≈ {money(pickedTotal)}</span>
+              </div>
+            )}
+            {pickedCount > 0 && (
+              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                Estimate only — {vendor?.businessName || 'the vendor'} confirms the final total
+              </div>
+            )}
 
-          {orderImagePreview ? (
-            <div style={{ position: 'relative', width: 96, height: 96, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-              <img src={orderImagePreview} alt="Order reference" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <button
-                type="button"
-                onClick={() => { setOrderImage(null); setOrderImagePreview(null); }}
-                style={{
-                  position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <X size={13} color="#fff" />
-              </button>
+            <div style={{ margin: '12px 0 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+                <Package size={15} color="#9ca3af" />
+                ATTACH A PHOTO <span style={{ fontWeight: 500, color: '#9ca3af' }}>(optional)</span>
+              </div>
+
+              {orderImagePreview ? (
+                <div style={{ position: 'relative', width: 96, height: 96, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  <img src={orderImagePreview} alt="Order reference" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button
+                    type="button"
+                    onClick={() => { setOrderImage(null); setOrderImagePreview(null); }}
+                    style={{
+                      position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <X size={13} color="#fff" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => orderImageInputRef.current?.click()}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10,
+                    border: '1px dashed #d1d5db', background: '#f9fafb', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  <Package size={16} color="#9ca3af" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Add a photo</span>
+                </button>
+              )}
+              <input ref={orderImageInputRef} type="file" accept="image/*" onChange={handleOrderImageSelect} style={{ display: 'none' }} />
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => orderImageInputRef.current?.click()}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10,
-                border: '1px dashed #d1d5db', background: '#f9fafb', cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              <Package size={16} color="#9ca3af" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6b7280' }}>Add a photo</span>
-            </button>
-          )}
-          <input ref={orderImageInputRef} type="file" accept="image/*" onChange={handleOrderImageSelect} style={{ display: 'none' }} />
-        </div>
 
             {/* ── DELIVERY LOCATION (compulsory) ── */}
             <Field label="DELIVER TO" icon={<MapPin size={15} color="#ef4444" />}>
@@ -463,26 +555,26 @@ Any special instructions`;
               </div>
             )}
 
-             <div style={{
+            <div style={{
               display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', marginBottom: 14,
               border: `1px solid ${theme.green}`, borderRadius: 10, background: '#f9fafb',
             }}>
               <span style={{ fontSize: 13, color: '#374151' }}>Delivery Fee:</span>
-             <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>
-              {(() => {
-                const pickupLat = vendor?.latitude != null ? Number(vendor.latitude) : null;
-                const pickupLng = vendor?.longitude != null ? Number(vendor.longitude) : null;
-                const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
-                const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
+              <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>
+                {(() => {
+                  const pickupLat = vendor?.latitude != null ? Number(vendor.latitude) : null;
+                  const pickupLng = vendor?.longitude != null ? Number(vendor.longitude) : null;
+                  const dLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
+                  const dLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
 
-                if (pickupLat == null || pickupLng == null || destLat == null || destLng == null || Number.isNaN(pickupLat) || Number.isNaN(pickupLng)) {
-                  return 'GHS —';
-                }
+                  if (pickupLat == null || pickupLng == null || dLat == null || dLng == null || Number.isNaN(pickupLat) || Number.isNaN(pickupLng)) {
+                    return 'GHS —';
+                  }
 
-                const fee = calculateDeliveryEstimate({ pickupLat, pickupLng, destinationLat: Number(destLat), destinationLng: Number(destLng) });
-                return Number.isNaN(fee) ? 'GHS —' : `GHS ${fee}.00`;
-              })()}
-            </span>
+                  const fee = calculateDeliveryEstimate({ pickupLat, pickupLng, destinationLat: Number(dLat), destinationLng: Number(dLng) });
+                  return Number.isNaN(fee) ? 'GHS —' : `GHS ${fee}.00`;
+                })()}
+              </span>
             </div>
 
             {/* ── PAYMENT METHOD ── */}
@@ -517,7 +609,39 @@ Any special instructions`;
             )}
           </>
         )}
+
+        {/* ── RATINGS ── */}
+        <div id="vp-ratings-section" style={{ marginTop: 36 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '0 0 10px' }}>Ratings & Reviews</h2>
+          <RatingSummaryCard
+            summary={ratingSummary}
+            loading={loadingRating}
+            theme={theme}
+            onRate={() => setRateModalOpen(true)}
+          />
+        </div>
       </div>
+
+      {activeProduct && (
+        <ProductOptionsModal
+          product={activeProduct}
+          theme={theme}
+          onClose={() => setActiveProduct(null)}
+          onConfirm={(line, lineTotal) => { appendNoteLine(line, lineTotal); setActiveProduct(null); }}
+        />
+      )}
+
+      {rateModalOpen && (
+        <RateVendorModal
+          vendorName={vendor?.businessName}
+          theme={theme}
+          onClose={() => setRateModalOpen(false)}
+          onSubmit={async (stars, comment) => {
+            await submitVendorRating(stars, comment);
+            setRateModalOpen(false);
+          }}
+        />
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -598,6 +722,8 @@ Any special instructions`;
           backdrop-filter: blur(6px);
           padding: 3px 9px;
           border-radius: 50px;
+          cursor: pointer;
+          font-family: inherit;
         }
         .vp-hero__name {
           font-size: clamp(22px, 5.5vw, 27px);
@@ -631,7 +757,7 @@ Any special instructions`;
           border-radius: 6px;
         }
 
-        /* ── PRODUCT GRID — thin, dense, works with or without images ── */
+        /* ── PRODUCT GRID ── */
         .vp-product-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
@@ -644,6 +770,7 @@ Any special instructions`;
           overflow: hidden;
           cursor: pointer;
           transition: transform 0.12s ease, box-shadow 0.12s ease;
+          position: relative;
         }
         .vp-product-card:active {
           transform: scale(0.96);
@@ -673,6 +800,21 @@ Any special instructions`;
           font-weight: 800;
           color: #10b981;
           margin-top: 2px;
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+        .vp-product-card__opts-badge {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: rgba(15,17,23,0.75);
+          color: #fff;
+          border-radius: 50px;
+          padding: 2px 6px;
+          font-size: 8.5px;
+          font-weight: 800;
+          letter-spacing: 0.2px;
         }
       `}</style>
     </div>
@@ -680,20 +822,493 @@ Any special instructions`;
 }
 
 /* ════════════════════════════════════════════
-   LocationPicker — three real states now, not two:
+   PRODUCT OPTIONS MODAL
+   Opened when a product has variant groups and/or addon groups.
+   Lets the customer choose a variant (radio, price-adjusting),
+   pick addons (checkbox or stepper, price-adjusting, "Free" when
+   0), set a quantity, and add a per-item note — then builds one
+   fully-priced, human-readable line and hands it back to the
+   parent to append to the order note.
+════════════════════════════════════════════ */
+function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
+  const variantGroups = (product.variantGroups || []).map(g => ({
+    ...g,
+    variants: (g.variants || []).filter(v => v.available !== false),
+  })).filter(g => g.variants.length > 0);
 
-   1. closed + nothing selected  → a plain BUTTON (no <input> in
-      the DOM at all). This is what fixed the auto-keyboard bug:
-      before, "no selection yet" and "open" were the same branch,
-      so an <input autoFocus> was mounted the instant the page
-      loaded, and mobile browsers pop the keyboard for any
-      autoFocus input the moment it mounts — even with no user
-      interaction. Now nothing keyboard-triggering exists until
-      the button is tapped.
-   2. closed + selected           → collapsed pill (unchanged).
-   3. open (only ever reached via a tap) → the real <input
-      autoFocus>, which is exactly when autofocus is supposed to
-      fire — right after a deliberate tap, not on page load.
+  const addonGroups = (product.addonGroups || []).map(g => ({
+    ...g,
+    addons: (g.addons || []).filter(a => a.available !== false),
+  })).filter(g => g.addons.length > 0);
+
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariants, setSelectedVariants] = useState({}); // groupId -> variant
+  const [addonQty, setAddonQty] = useState({}); // addonId -> qty (0 = not selected)
+  const [itemNote, setItemNote] = useState('');
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  function pickVariant(groupId, variant) {
+    setSelectedVariants((prev) => ({ ...prev, [groupId]: variant }));
+  }
+
+  function addonGroupSelectedCount(group) {
+    return group.addons.reduce((n, a) => n + (addonQty[a.id] > 0 ? 1 : 0), 0);
+  }
+
+  function toggleAddon(group, addon) {
+    setAddonQty((prev) => {
+      const current = prev[addon.id] || 0;
+      if (current > 0) return { ...prev, [addon.id]: 0 };
+      const selectedInGroup = addonGroupSelectedCount(group);
+      if (selectedInGroup >= (group.maxSelect ?? 10)) return prev; // group full
+      return { ...prev, [addon.id]: 1 };
+    });
+  }
+
+  function bumpAddonQty(addon, delta) {
+    setAddonQty((prev) => {
+      const next = Math.max(0, Math.min(20, (prev[addon.id] || 0) + delta));
+      return { ...prev, [addon.id]: next };
+    });
+  }
+
+  function addonExtraCost(addon, qty) {
+    if (qty <= 0) return 0;
+    const price = Number(addon.price || 0);
+    if (!addon.incrementable) return price;
+    if (addon.incrementMode === 'free') return price + (qty - 1);
+    return price * qty; // 'multiple' (default)
+  }
+
+  const variantsTotal = useMemo(
+    () => Object.values(selectedVariants).reduce((s, v) => s + Number(v?.priceAdjustment || 0), 0),
+    [selectedVariants]
+  );
+
+  const addonsTotal = useMemo(() => {
+    let total = 0;
+    for (const g of addonGroups) {
+      for (const a of g.addons) {
+        total += addonExtraCost(a, addonQty[a.id] || 0);
+      }
+    }
+    return total;
+  }, [addonGroups, addonQty]);
+
+  const unitPrice = Number(product.price || 0) + variantsTotal + addonsTotal;
+  const lineTotal = unitPrice * quantity;
+
+  const missingRequiredGroup = variantGroups.find(g => g.required && !selectedVariants[g.id]);
+  const invalidAddonGroup = addonGroups.find(g => {
+    const n = addonGroupSelectedCount(g);
+    return n < (g.minSelect ?? 0);
+  });
+  const canConfirm = !missingRequiredGroup && !invalidAddonGroup;
+
+  function handleConfirm() {
+    setTouched(true);
+    if (!canConfirm) return;
+
+    const parts = [`${quantity}x ${product.name}`];
+
+    const variantNames = Object.values(selectedVariants).filter(Boolean).map(v => v.name);
+    if (variantNames.length) parts[0] += ` (${variantNames.join(', ')})`;
+
+    const addonBits = [];
+    for (const g of addonGroups) {
+      for (const a of g.addons) {
+        const qty = addonQty[a.id] || 0;
+        if (qty <= 0) continue;
+        const label = a.incrementable && qty > 1 ? `${qty}x ${a.name}` : a.name;
+        const extra = addonExtraCost(a, qty);
+        addonBits.push(`${label} (${addonPriceLabel(extra)})`);
+      }
+    }
+
+    let line = parts[0];
+    if (addonBits.length) line += ` + ${addonBits.join(', ')}`;
+    if (itemNote.trim()) line += ` — ${itemNote.trim()}`;
+    line += ` [${money(lineTotal)}]`;
+
+    onConfirm(line, lineTotal);
+  }
+
+  const emoji = { food: '🍛', grocery: '🛒', pharmacy: '💊', boutique: '👗', electronics: '📱', drinks: '🥤' }[product.category?.toLowerCase()] || '📦';
+
+  return (
+    <div className="pom-overlay" onClick={onClose}>
+      <div className="pom-sheet" onClick={(e) => e.stopPropagation()}>
+
+        <div className="pom-handle" />
+
+        <div className="pom-header">
+          <div className="pom-header__img" style={product.images?.[0] ? { background: `url(${product.images[0]}) center/cover` } : undefined}>
+            {!product.images?.[0] && emoji}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="pom-header__name">{product.name}</div>
+            <div className="pom-header__price">from {money(product.price)}</div>
+          </div>
+          <button type="button" onClick={onClose} className="pom-close"><X size={16} color="#6b7280" /></button>
+        </div>
+
+        {product.description && <p className="pom-desc">{product.description}</p>}
+
+        <div className="pom-body">
+          {variantGroups.map((g) => (
+            <div key={g.id} className="pom-group">
+              <div className="pom-group__header">
+                <span>{g.name}</span>
+                <span className={`pom-group__tag ${g.required ? 'pom-group__tag--required' : ''}`}>
+                  {g.required ? 'Required · pick 1' : 'Optional'}
+                </span>
+              </div>
+              {g.variants.map((v) => {
+                const active = selectedVariants[g.id]?.id === v.id;
+                return (
+                  <button
+                    type="button"
+                    key={v.id}
+                    className={`pom-option ${active ? 'pom-option--active' : ''}`}
+                    onClick={() => pickVariant(g.id, active && !g.required ? null : v)}
+                  >
+                    <span className="pom-option__radio">{active && <Check size={11} color="#fff" />}</span>
+                    <span className="pom-option__name">{v.name}</span>
+                    <span className="pom-option__price">
+                      {Number(v.priceAdjustment || 0) === 0 ? 'Included' : `+${money(v.priceAdjustment)}`}
+                    </span>
+                  </button>
+                );
+              })}
+              {touched && g.required && !selectedVariants[g.id] && (
+                <div className="pom-error">Please choose an option</div>
+              )}
+            </div>
+          ))}
+
+          {addonGroups.map((g) => {
+            const selectedCount = addonGroupSelectedCount(g);
+            const groupInvalid = touched && selectedCount < (g.minSelect ?? 0);
+            return (
+              <div key={g.id} className="pom-group">
+                <div className="pom-group__header">
+                  <span>{g.name}</span>
+                  <span className="pom-group__tag">
+                    {g.minSelect > 0 ? `Pick ${g.minSelect}–${g.maxSelect ?? 10}` : `Up to ${g.maxSelect ?? 10}`}
+                  </span>
+                </div>
+                {g.addons.map((a) => {
+                  const qty = addonQty[a.id] || 0;
+                  const active = qty > 0;
+                  return (
+                    <div key={a.id} className={`pom-addon ${active ? 'pom-addon--active' : ''}`}>
+                      <button type="button" className="pom-addon__main" onClick={() => toggleAddon(g, a)}>
+                        <span className="pom-option__radio pom-option__radio--square">{active && <Check size={11} color="#fff" />}</span>
+                        <span className="pom-option__name">{a.name}</span>
+                        <span className={`pom-option__price ${Number(a.price || 0) === 0 ? 'pom-option__price--free' : ''}`}>
+                          {addonPriceLabel(a.price)}
+                        </span>
+                      </button>
+                      {active && a.incrementable && (
+                        <div className="pom-stepper pom-stepper--sm">
+                          <button type="button" onClick={() => bumpAddonQty(a, -1)}><Minus size={12} /></button>
+                          <span>{qty}</span>
+                          <button type="button" onClick={() => bumpAddonQty(a, 1)}><Plus size={12} /></button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {groupInvalid && (
+                  <div className="pom-error">Please choose at least {g.minSelect}</div>
+                )}
+              </div>
+            );
+          })}
+
+          <div className="pom-group">
+            <div className="pom-group__header"><span>Note for this item</span><span className="pom-group__tag">Optional</span></div>
+            <div className="pom-note-wrap">
+              <MessageSquareText size={14} color="#9ca3af" style={{ flexShrink: 0, marginTop: 2 }} />
+              <input
+                value={itemNote}
+                onChange={(e) => setItemNote(e.target.value)}
+                placeholder="e.g. No pepper, extra crispy..."
+                className="pom-note-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pom-footer">
+          <div className="pom-stepper">
+            <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))}><Minus size={14} /></button>
+            <span>{quantity}</span>
+            <button type="button" onClick={() => setQuantity((q) => Math.min(50, q + 1))}><Plus size={14} /></button>
+          </div>
+          <button type="button" className="pom-confirm" style={{ background: theme.green }} onClick={handleConfirm}>
+            <span>Add to order note</span>
+            <span className="pom-confirm__price">{money(lineTotal)}</span>
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        .pom-overlay {
+          position: fixed; inset: 0; z-index: 100;
+          background: rgba(15,17,23,0.5);
+          display: flex; align-items: flex-end; justify-content: center;
+          animation: pomFade 0.15s ease;
+        }
+        @keyframes pomFade { from { opacity: 0; } to { opacity: 1; } }
+        @media (min-width: 640px) {
+          .pom-overlay { align-items: center; padding: 20px; }
+        }
+        .pom-sheet {
+          background: #fff;
+          width: 100%; max-width: 480px;
+          max-height: 90vh;
+          border-radius: 22px 22px 0 0;
+          display: flex; flex-direction: column;
+          animation: pomUp 0.2s ease;
+        }
+        @media (min-width: 640px) {
+          .pom-sheet { border-radius: 22px; max-height: 85vh; }
+        }
+        @keyframes pomUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .pom-handle {
+          width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px;
+          margin: 10px auto 4px; flex-shrink: 0;
+        }
+        .pom-header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; flex-shrink: 0; }
+        .pom-header__img {
+          width: 52px; height: 52px; border-radius: 12px; background: #ecfdf5;
+          display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+        }
+        .pom-header__name { font-size: 15px; font-weight: 800; color: #0f1117; }
+        .pom-header__price { font-size: 12px; color: #10b981; font-weight: 700; margin-top: 2px; }
+        .pom-close {
+          width: 30px; height: 30px; border-radius: 50%; border: none; background: #f3f4f6;
+          display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+        }
+        .pom-desc { padding: 0 18px 8px; font-size: 12.5px; color: #9ca3af; line-height: 1.5; }
+        .pom-body { overflow-y: auto; padding: 6px 18px 12px; flex: 1; }
+        .pom-group { margin-bottom: 18px; }
+        .pom-group__header {
+          display: flex; align-items: center; justify-content: space-between;
+          font-size: 13px; font-weight: 800; color: #0f1117; margin-bottom: 8px;
+        }
+        .pom-group__tag {
+          font-size: 10.5px; font-weight: 700; color: #9ca3af; background: #f3f4f6;
+          padding: 2px 8px; border-radius: 50px;
+        }
+        .pom-group__tag--required { color: #b45309; background: #fffbeb; }
+        .pom-option, .pom-addon__main {
+          width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+          padding: 10px 12px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff;
+          cursor: pointer; font-family: inherit; margin-bottom: 7px;
+        }
+        .pom-option--active, .pom-addon--active .pom-addon__main {
+          border-color: #10b981; background: #f0fdf4;
+        }
+        .pom-option__radio {
+          width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #d1d5db;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .pom-option__radio--square { border-radius: 5px; }
+        .pom-option--active .pom-option__radio, .pom-addon--active .pom-option__radio {
+          background: #10b981; border-color: #10b981;
+        }
+        .pom-option__name { flex: 1; font-size: 13px; font-weight: 700; color: #0f1117; }
+        .pom-option__price { font-size: 12px; font-weight: 700; color: #6b7280; }
+        .pom-option__price--free { color: #10b981; }
+        .pom-addon { margin-bottom: 7px; }
+        .pom-addon .pom-addon__main { margin-bottom: 0; }
+        .pom-addon .pom-stepper--sm { margin: 6px 0 0 12px; }
+        .pom-error { font-size: 11px; color: #dc2626; margin-top: -2px; margin-bottom: 6px; font-weight: 600; }
+        .pom-note-wrap {
+          display: flex; align-items: flex-start; gap: 8px; border: 1px solid #e5e7eb;
+          border-radius: 12px; padding: 10px 12px;
+        }
+        .pom-note-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; }
+        .pom-footer {
+          display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+          border-top: 1px solid #f0f0f0; flex-shrink: 0;
+        }
+        .pom-stepper {
+          display: flex; align-items: center; gap: 10px; border: 1px solid #e5e7eb;
+          border-radius: 10px; padding: 6px 10px; flex-shrink: 0;
+        }
+        .pom-stepper button {
+          width: 22px; height: 22px; border-radius: 50%; border: none; background: #f3f4f6;
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .pom-stepper span { font-size: 13px; font-weight: 800; min-width: 16px; text-align: center; }
+        .pom-confirm {
+          flex: 1; height: 46px; border: none; border-radius: 12px; color: #fff; font-family: inherit;
+          font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center;
+          justify-content: space-between; padding: 0 16px;
+        }
+        .pom-confirm__price { font-size: 13px; font-weight: 900; }
+      `}</style>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   VENDOR RATING — summary card + submit modal
+════════════════════════════════════════════ */
+function StarRow({ value, size = 14, interactive = false, onChange }) {
+  const [hover, setHover] = useState(0);
+  const display = interactive && hover ? hover : value;
+  return (
+    <div style={{ display: 'flex', gap: 3 }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          onMouseEnter={() => interactive && setHover(n)}
+          onMouseLeave={() => interactive && setHover(0)}
+          onClick={() => interactive && onChange?.(n)}
+          style={{ cursor: interactive ? 'pointer' : 'default', display: 'flex' }}
+        >
+          <Star size={size} fill={n <= display ? '#f59e0b' : 'none'} color={n <= display ? '#f59e0b' : '#d1d5db'} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function RatingSummaryCard({ summary, loading, theme, onRate }) {
+  if (loading) {
+    return <div style={{ height: 84, borderRadius: 14, background: '#f3f4f6' }} />;
+  }
+
+  const average = summary?.average ?? 0;
+  const count = summary?.count ?? 0;
+  const myRating = summary?.myRating;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+      background: '#fff', border: '1px solid #f0f0f0', borderRadius: 16, padding: '16px 18px', marginBottom: 20,
+    }}>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <span style={{ fontSize: 26, fontWeight: 900, color: '#0f1117' }}>{average.toFixed(1)}</span>
+          <StarRow value={Math.round(average)} size={16} />
+        </div>
+        <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+          {count > 0 ? `Based on ${count} rating${count !== 1 ? 's' : ''}` : 'No ratings yet — be the first'}
+        </div>
+      </div>
+
+      {myRating ? (
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Your rating</div>
+          <StarRow value={myRating.rating} size={15} />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onRate}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10,
+            border: 'none', background: theme.green, color: '#fff', fontWeight: 800, fontSize: 13,
+            fontFamily: 'inherit', cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          Rate vendor <ChevronRight size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RateVendorModal({ vendorName, theme, onClose, onSubmit }) {
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit() {
+    if (stars < 1) { setError('Please select a star rating'); return; }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(stars, comment.trim());
+    } catch (e) {
+      setError(e.message || 'Could not submit your rating.');
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="rm-overlay" onClick={onClose}>
+      <div className="rm-card" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} className="rm-close"><X size={16} color="#6b7280" /></button>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#0f1117', marginBottom: 2 }}>Rate {vendorName || 'this vendor'}</div>
+        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 18 }}>You can only rate a vendor once — make it count!</div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+          <StarRow value={stars} size={30} interactive onChange={setStars} />
+        </div>
+
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Optional — tell others about your experience"
+          rows={3}
+          style={{
+            width: '100%', border: '1px solid #e5e7eb', borderRadius: 12, padding: 12, fontFamily: 'inherit',
+            fontSize: 13, resize: 'vertical', boxSizing: 'border-box', marginBottom: 12,
+          }}
+        />
+
+        {error && <div style={{ color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{error}</div>}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting}
+          style={{
+            width: '100%', height: 46, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 800,
+            fontSize: 13, fontFamily: 'inherit', cursor: submitting ? 'default' : 'pointer',
+            background: theme.green, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          {submitting ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> Submitting...</> : 'Submit Rating'}
+        </button>
+      </div>
+
+      <style>{`
+        .rm-overlay {
+          position: fixed; inset: 0; z-index: 100; background: rgba(15,17,23,0.5);
+          display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .rm-card {
+          background: #fff; width: 100%; max-width: 360px; border-radius: 20px;
+          padding: 22px; position: relative;
+        }
+        .rm-close {
+          position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%;
+          border: none; background: #f3f4f6; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════
+   LocationPicker — unchanged from before: three states
+   (closed+empty → plain button with no <input> in the DOM,
+   closed+selected → collapsed pill, open → real input with
+   autoFocus, only ever reached via a deliberate tap) so mobile
+   browsers never pop the keyboard on page load.
 ════════════════════════════════════════════ */
 function LocationPicker({ hint, selected, locations, loading, accent, overrideLabel, onPick }) {
   const [open, setOpen] = useState(false);
@@ -827,17 +1442,18 @@ function PayChip({ value, label, selected, onSelect, theme }) {
   );
 }
 
-function ProductCard({ product, onClick }) {
+function ProductCard({ product, hasOptions, onClick }) {
   const emoji = { food: '🍛', grocery: '🛒', pharmacy: '💊', boutique: '👗', electronics: '📱', drinks: '🥤' }[product.category?.toLowerCase()] || '📦';
   return (
     <div onClick={onClick} className="vp-product-card">
+      {hasOptions && <span className="vp-product-card__opts-badge">CUSTOMIZE</span>}
       <div className="vp-product-card__img" style={product.images?.[0] ? { background: `url(${product.images[0]}) center/cover` } : undefined}>
         {!product.images?.[0] && emoji}
       </div>
       <div className="vp-product-card__body">
         <div className="vp-product-card__name">{product.name}</div>
         <div className="vp-product-card__price">
-          {product.variantGroups?.some(g => g.required) ? 'from ' : ''}GHS {product.price?.toFixed(2)}
+          {hasOptions ? 'from ' : ''}GHS {product.price?.toFixed(2)}
         </div>
       </div>
     </div>
