@@ -57,10 +57,10 @@ const TEAM = [
 }, {
   intials: "BB",
   name: 'Brace Benedict',
-  role: 'logistics manger',
+  role: 'Logistics Manger',
   bio: 'As the Logistic Manger, Brace Benedict oversee the coordination of deliveries to ensure orders are picked up and delivered efficiently and on time. Brace Benedict mange delivery schedules, optimize personnel, monitor logistics operation and work to ensure customers recieve reliable and timely service while maintaining high operational standards.',
   tags:['Smart Delivery, On Time Delivery, Fast And Reliable'],
-  colorKey:'white',
+  colorKey:'red',
   social: { instagram: 'paa_krah'},
 } 
 ];
