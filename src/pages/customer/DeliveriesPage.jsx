@@ -29,7 +29,6 @@ export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destL
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(pickupLat)) * Math.cos(toRad(destLat)) * Math.sin(dLng / 2) ** 2;
-
   const km = r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   if (km <= 1) return 5;

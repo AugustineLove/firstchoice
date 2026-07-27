@@ -584,12 +584,13 @@ Any special instructions`;
                   const pickupLng = vendor?.longitude != null ? Number(vendor.longitude) : null;
                   const dLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
                   const dLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
-
+                  console.log(pickupLat, pickupLng, dLat, dLng);
                   if (pickupLat == null || pickupLng == null || dLat == null || dLng == null || Number.isNaN(pickupLat) || Number.isNaN(pickupLng)) {
                     return 'GHS —';
                   }
 
-                  const fee = calculateDeliveryEstimate({ pickupLat, pickupLng, destinationLat: Number(dLat), destinationLng: Number(dLng) });
+                  const fee = calculateDeliveryEstimate({ pickupLat, pickupLng, destLat: Number(dLat), destLng: Number(dLng) });
+                  console.log(fee);
                   return Number.isNaN(fee) ? 'GHS —' : `GHS ${fee}.00`;
                 })()}
               </span>
@@ -1009,7 +1010,7 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
               ? { background: `url(${product.images[0]}) center/cover` }
               : { background: `linear-gradient(135deg, ${cat.tintA}, ${cat.tintB})` }}
           >
-            {!product.images?.[0] && cat.emoji}
+            {!product.images?.[0] && product.name[0]}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="pom-header__name">{product.name}</div>
@@ -1517,7 +1518,8 @@ function ProductCard({ product, hasOptions, theme, onClick }) {
           ? { background: `url(${product.images[0]}) center/cover` }
           : { background: `linear-gradient(135deg, ${cat.tintA}, ${cat.tintB})` }}
       >
-        {!hasPhoto && cat.emoji}
+        {/* {!hasPhoto && cat.emoji} */}
+        {hasPhoto ? '' : product.name[0]}
       </div>
 
       <div className="vp-row__content">
