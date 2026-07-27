@@ -19,7 +19,6 @@ const STATUS_STYLE = {
 ════════════════════════════════════════════ */
 export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
   if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
-  console.log(pickupLat, pickupLng)
   const r = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
 
