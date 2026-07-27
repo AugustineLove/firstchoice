@@ -17,6 +17,25 @@ const TYPE_STYLE = {
   electronics: { emoji: '📱', a: '#6366F1', b: '#818CF8' },
 };
 
+// Per-product-category palette used by product cards & the options
+// picker. Each has a soft two-stop tint for the placeholder background
+// (used when a product has no photo) plus an accent used for a tiny
+// category strip that appears on EVERY card, photo or not, so the grid
+// stays glanceable and colour-coded either way.
+const CATEGORY_STYLE = {
+  food:        { emoji: '🍛', tintA: '#ECFDF5', tintB: '#D1FAE5', accent: '#10B981' },
+  grocery:     { emoji: '🛒', tintA: '#F0FDF4', tintB: '#DCFCE7', accent: '#16A34A' },
+  pharmacy:    { emoji: '💊', tintA: '#EFF6FF', tintB: '#DBEAFE', accent: '#3B82F6' },
+  boutique:    { emoji: '👗', tintA: '#FDF2F8', tintB: '#FCE7F3', accent: '#EC4899' },
+  electronics: { emoji: '📱', tintA: '#EEF2FF', tintB: '#E0E7FF', accent: '#6366F1' },
+  drinks:      { emoji: '🥤', tintA: '#FFF7ED', tintB: '#FFEDD5', accent: '#F97316' },
+  default:     { emoji: '📦', tintA: '#F9FAFB', tintB: '#F3F4F6', accent: '#9CA3AF' },
+};
+
+function categoryStyle(category) {
+  return CATEGORY_STYLE[category?.toLowerCase()] || CATEGORY_STYLE.default;
+}
+
 // NOTE ON THE FLOW BELOW: products are shown for browsing/reference —
 // tapping one either (a) drops a simple line into the order note, if it
 // has no variants/addons, or (b) opens the options picker so the customer
@@ -213,7 +232,6 @@ Any special instructions`;
 
   function productHasOptions(product) {
     const hasVariants = (product.variantGroups || []).some(g => (g.variants || []).some(v => v.available !== false));
-    console.log(hasVariants);
     const hasAddons   = (product.addonGroups   || []).some(g => (g.addons   || []).some(a => a.available !== false));
     return hasVariants || hasAddons;
   }
@@ -385,8 +403,8 @@ Any special instructions`;
         </p>
 
         {loading && (
-          <div className="vp-product-grid">
-            {Array.from({ length: 6 }).map((_, i) => <ProductSkeleton key={i} />)}
+          <div className="vp-product-list">
+            {Array.from({ length: 5 }).map((_, i) => <ProductSkeleton key={i} />)}
           </div>
         )}
 
@@ -395,9 +413,9 @@ Any special instructions`;
         )}
 
         {!loading && products.length > 0 && (
-          <div className="vp-product-grid" style={{ marginBottom: 8 }}>
+          <div className="vp-product-list" style={{ marginBottom: 8 }}>
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} hasOptions={productHasOptions(p)} onClick={() => handleProductTap(p)} />
+              <ProductCard key={p.id} product={p} hasOptions={productHasOptions(p)} theme={theme} onClick={() => handleProductTap(p)} />
             ))}
           </div>
         )}
@@ -757,37 +775,55 @@ Any special instructions`;
           border-radius: 6px;
         }
 
-        /* ── PRODUCT GRID ── */
-        .vp-product-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        /* ── PRODUCT LIST — horizontal rows, not tiles.
+           Rows read better on narrow phone widths than a square grid (no
+           awkward wrapping, no orphaned single tile on the last row), and
+           a no-photo product only has to fill a small 56px thumbnail
+           instead of an entire tile, so the placeholder never dominates. ── */
+        .vp-product-list {
+          display: flex;
+          flex-direction: column;
           gap: 8px;
         }
-        .vp-product-card {
+        .vp-product-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
           background: #fff;
-          border-radius: 12px;
+          border-radius: 14px;
           border: 1px solid #f0f0f0;
-          overflow: hidden;
+          padding: 8px;
           cursor: pointer;
-          transition: transform 0.12s ease, box-shadow 0.12s ease;
+          transition: transform 0.1s ease, border-color 0.12s ease;
+        }
+        .vp-product-row:active {
+          transform: scale(0.985);
+        }
+
+        .vp-row__thumb {
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
+          flex-shrink: 0;
+          overflow: hidden;
           position: relative;
         }
-        .vp-product-card:active {
-          transform: scale(0.96);
+        .vp-row__thumb--photo {
+          /* photo supplied via inline background */
         }
-        .vp-product-card__img {
-          height: 64px;
+        .vp-row__thumb--placeholder {
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 22px;
-          background: #ecfdf5;
         }
-        .vp-product-card__body {
-          padding: 7px 8px 8px;
+
+        .vp-row__content {
+          flex: 1;
+          min-width: 0;
         }
-        .vp-product-card__name {
-          font-size: 11.5px;
+        .vp-row__name {
+          font-size: 13.5px;
           font-weight: 700;
           color: #0f1117;
           overflow: hidden;
@@ -795,27 +831,47 @@ Any special instructions`;
           white-space: nowrap;
           line-height: 1.3;
         }
-        .vp-product-card__price {
+        .vp-row__desc {
           font-size: 11.5px;
-          font-weight: 800;
-          color: #10b981;
+          color: #9ca3af;
           margin-top: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .vp-row__footer {
           display: flex;
           align-items: center;
-          gap: 3px;
+          gap: 8px;
+          margin-top: 4px;
         }
-        .vp-product-card__opts-badge {
-          position: absolute;
-          top: 5px;
-          right: 5px;
-          background: rgba(15,17,23,0.75);
-          color: #fff;
-          border-radius: 50px;
-          padding: 2px 6px;
-          font-size: 8.5px;
+        .vp-row__price {
+          font-size: 12.5px;
           font-weight: 800;
-          letter-spacing: 0.2px;
+          color: #10b981;
         }
+        .vp-row__customize {
+          font-size: 10px;
+          font-weight: 700;
+          color: #6b7280;
+          background: #f3f4f6;
+          padding: 2px 7px;
+          border-radius: 50px;
+        }
+
+        .vp-row__action {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        /* skeleton */
+        .vp-row-skel { animation: pulse 1.3s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
       `}</style>
     </div>
   );
@@ -938,7 +994,7 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
     onConfirm(line, lineTotal);
   }
 
-  const emoji = { food: '🍛', grocery: '🛒', pharmacy: '💊', boutique: '👗', electronics: '📱', drinks: '🥤' }[product.category?.toLowerCase()] || '📦';
+  const cat = categoryStyle(product.category);
 
   return (
     <div className="pom-overlay" onClick={onClose}>
@@ -947,12 +1003,17 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
         <div className="pom-handle" />
 
         <div className="pom-header">
-          <div className="pom-header__img" style={product.images?.[0] ? { background: `url(${product.images[0]}) center/cover` } : undefined}>
-            {!product.images?.[0] && emoji}
+          <div
+            className="pom-header__img"
+            style={product.images?.[0]
+              ? { background: `url(${product.images[0]}) center/cover` }
+              : { background: `linear-gradient(135deg, ${cat.tintA}, ${cat.tintB})` }}
+          >
+            {!product.images?.[0] && cat.emoji}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="pom-header__name">{product.name}</div>
-            <div className="pom-header__price">from {money(product.price)}</div>
+            <div className="pom-header__price">Order</div>
           </div>
           <button type="button" onClick={onClose} className="pom-close"><X size={16} color="#6b7280" /></button>
         </div>
@@ -1087,8 +1148,9 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
         }
         .pom-header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; flex-shrink: 0; }
         .pom-header__img {
-          width: 52px; height: 52px; border-radius: 12px; background: #ecfdf5;
+          width: 52px; height: 52px; border-radius: 12px;
           display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+          overflow: hidden;
         }
         .pom-header__name { font-size: 15px; font-weight: 800; color: #0f1117; }
         .pom-header__price { font-size: 12px; color: #10b981; font-weight: 700; margin-top: 2px; }
@@ -1442,19 +1504,35 @@ function PayChip({ value, label, selected, onSelect, theme }) {
   );
 }
 
-function ProductCard({ product, hasOptions, onClick }) {
-  const emoji = { food: '🍛', grocery: '🛒', pharmacy: '💊', boutique: '👗', electronics: '📱', drinks: '🥤' }[product.category?.toLowerCase()] || '📦';
+function ProductCard({ product, hasOptions, theme, onClick }) {
+  const cat = categoryStyle(product.category);
+  const hasPhoto = !!product.images?.[0];
+  const actionColor = theme?.green || '#10B981';
+
   return (
-    <div onClick={onClick} className="vp-product-card">
-      {hasOptions && <span className="vp-product-card__opts-badge">CUSTOMIZE</span>}
-      <div className="vp-product-card__img" style={product.images?.[0] ? { background: `url(${product.images[0]}) center/cover` } : undefined}>
-        {!product.images?.[0] && emoji}
+    <div onClick={onClick} className="vp-product-row">
+      <div
+        className={`vp-row__thumb ${hasPhoto ? 'vp-row__thumb--photo' : 'vp-row__thumb--placeholder'}`}
+        style={hasPhoto
+          ? { background: `url(${product.images[0]}) center/cover` }
+          : { background: `linear-gradient(135deg, ${cat.tintA}, ${cat.tintB})` }}
+      >
+        {!hasPhoto && cat.emoji}
       </div>
-      <div className="vp-product-card__body">
-        <div className="vp-product-card__name">{product.name}</div>
-        <div className="vp-product-card__price">
-          {hasOptions ? 'from ' : ''}GHS {product.price?.toFixed(2)}
+
+      <div className="vp-row__content">
+        <div className="vp-row__name">{product.name}</div>
+        {product.description && <div className="vp-row__desc">{product.description}</div>}
+        <div className="vp-row__footer">
+          <span className="vp-row__price">Order</span>
+          {hasOptions && <span className="vp-row__customize">Customize</span>}
         </div>
+      </div>
+
+      <div className="vp-row__action" style={{ background: hasOptions ? '#f3f4f6' : `${actionColor}1a` }}>
+        {hasOptions
+          ? <ChevronRight size={16} color="#6b7280" />
+          : <Plus size={17} color={actionColor} strokeWidth={2.75} />}
       </div>
     </div>
   );
@@ -1462,12 +1540,13 @@ function ProductCard({ product, hasOptions, onClick }) {
 
 function ProductSkeleton() {
   return (
-    <div className="vp-product-card">
-      <div className="vp-product-card__img" style={{ background: '#f3f4f6' }} />
-      <div className="vp-product-card__body">
-        <div style={{ height: 10, width: '80%', background: '#f3f4f6', borderRadius: 5 }} />
-        <div style={{ height: 10, width: '45%', background: '#f3f4f6', borderRadius: 5, marginTop: 6 }} />
+    <div className="vp-product-row vp-row-skel">
+      <div className="vp-row__thumb" style={{ background: '#f3f4f6' }} />
+      <div className="vp-row__content">
+        <div style={{ height: 11, width: '55%', background: '#f3f4f6', borderRadius: 5 }} />
+        <div style={{ height: 9, width: '30%', background: '#f3f4f6', borderRadius: 5, marginTop: 8 }} />
       </div>
+      <div className="vp-row__action" style={{ background: '#f3f4f6' }} />
     </div>
   );
 }
