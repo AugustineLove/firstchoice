@@ -17,7 +17,7 @@ const TEAM = [
   },
 
   {
-    initials: 'OO',
+    initials: 'OS',
     name: 'Oscar Stephens',
     role: 'Chief Operating Officer (COO)',
     bio: 'An Information Technology professional from Takoradi Technical University responsible for overseeing daily operations, logistics coordination, and ensuring smooth service delivery across the FirstChoice Express network.',
@@ -54,7 +54,15 @@ const TEAM = [
   tags: ['Sales', 'Marketing', 'Business Development'],
   colorKey: 'greenMid',
   social: { linkedin: '#' },
-},
+}, {
+  intials: "BB",
+  name: 'Brace Benedict',
+  role: 'logistics manger',
+  bio: 'As the Logistic Manger, Brace Benedict oversee the coordination of deliveries to ensure orders are picked up and delivered efficiently and on time. Brace Benedict mange delivery schedules, optimize personnel, monitor logistics operation and work to ensure customers recieve reliable and timely service while maintaining high operational standards.',
+  tags:['Smart Delivery, On Time Delivery, Fast And Reliable'],
+  colorKey:'white',
+  social: { instagram: 'paa_krah'},
+} 
 ];
 
 const VALUES = [
