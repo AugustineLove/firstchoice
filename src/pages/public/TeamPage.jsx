@@ -29,7 +29,7 @@ const TEAM = [
   {
   initials: 'CN',
   name: 'Collins Narh',
-  role: 'Project Coordinator',
+  role: 'Project Coordinator (PC)',
   bio: 'A dedicated member of the FirstChoice Express team who plays a key role in driving the project forward. Collins helps coordinate activities, supports team operations, and ensures plans are turned into action as the company continues to grow.',
   tags: ['Coordination', 'Execution', 'Team Support'],
   colorKey: 'greenLight',
@@ -49,7 +49,7 @@ const TEAM = [
   {
   initials: 'IB',
   name: 'Isaac Brace',
-  role: 'Head of Sales & Marketing',
+  role: 'Head of Sales & Marketing (HoS)',
   bio: 'A Business Administration student at Takoradi Technical University with a passion for entrepreneurship and brand growth. Isaac leads sales and marketing initiatives, helping expand FirstChoice Express through customer engagement, strategic campaigns, and strong relationships with local businesses.',
   tags: ['Sales', 'Marketing', 'Business Development'],
   colorKey: 'greenMid',
@@ -57,7 +57,7 @@ const TEAM = [
 }, {
   intials: "BB",
   name: 'Brace Benedict',
-  role: 'Logistics Manger',
+  role: 'Logistics Manger (LM)',
   bio: 'As the Logistic Manger, Brace Benedict oversee the coordination of deliveries to ensure orders are picked up and delivered efficiently and on time. Brace Benedict mange delivery schedules, optimize personnel, monitor logistics operation and work to ensure customers recieve reliable and timely service while maintaining high operational standards.',
   tags:['Smart Delivery, On Time Delivery, Fast And Reliable'],
   colorKey:'red',
