@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { initPushNotifications } from '../config/firebase';
 
 const AuthContext = createContext(null);
 
@@ -22,6 +23,10 @@ export function AuthProvider({ children }) {
     if (!token) { setLoading(false); return; }
     fetchMe(token);
   }, []);
+
+  useEffect(() => {
+  if (user) initPushNotifications(authFetch);
+}, [user]);
 
   async function fetchMe(t) {
     try {

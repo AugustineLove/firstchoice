@@ -820,6 +820,10 @@ Any special instructions`;
         .vp-row__content {
           flex: 1;
           min-width: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: left;
+          text-align: left;
         }
         .vp-row__name {
           font-size: 13.5px;
@@ -837,10 +841,11 @@ Any special instructions`;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
+          align-items: left;
         }
         .vp-row__footer {
           display: flex;
-          align-items: center;
+          align-items: left;
           gap: 8px;
           margin-top: 4px;
         }
