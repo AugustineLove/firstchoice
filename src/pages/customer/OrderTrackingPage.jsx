@@ -58,8 +58,8 @@ export default function OrderTrackingPage() {
       <div style={{ maxWidth: 560, margin: '0 auto', padding: 20 }}>
 
         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #f0f0f0', padding: 20, marginBottom: 16 }}>
-          <div style={{ fontWeight: 800, fontSize: 16 }}>{order.vendor?.businessName}</div>
-          <div style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{order.deliveryAddress}</div>
+          <div style={{color: '#6b7280', fontSize: 16 }}>From: {order.vendor?.businessName}</div>
+          <div style={{ fontSize: 16, color: '#6b7280', marginTop: 2 }}>To: {order.deliveryAddress}</div>
 
           {order.orderStatus === 'CANCELLED' ? (
             <div style={{ marginTop: 16, padding: 12, background: '#fef2f2', borderRadius: 10, color: '#dc2626', fontWeight: 700, fontSize: 13, textAlign: 'center' }}>

@@ -10,11 +10,6 @@ export const app = initializeApp({
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 });
 
-console.log('[push] firebase config:', {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  senderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-});
 
 export async function initPushNotifications(authFetch) {
   try {

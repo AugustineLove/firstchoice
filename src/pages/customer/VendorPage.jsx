@@ -430,8 +430,8 @@ Any special instructions`;
           }}>
             <CheckCircle2 size={22} color={theme.green} />
             <div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: '#0f1117' }}>Order sent to {vendor?.businessName}</div>
-              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>They'll confirm the details and total shortly.</div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: '#0f1117' }}>Order placed</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>We'll confirm the details and total shortly.</div>
             </div>
           </div>
         ) : (
