@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { initPushNotifications } from '../config/firebase';
+import { initPushNotifications, listenForForegroundMessages } from '../config/firebase';
 
 const AuthContext = createContext(null);
 
