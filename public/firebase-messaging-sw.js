@@ -10,12 +10,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-com
 // safe to ship — the mobile app already uses the equivalent from
 // GoogleService-Info.plist / google-services.json for this same project).
 firebase.initializeApp({
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyBm2Nx3NssXCutWOjvtmh1ULnPsqLBlqfE",
+  authDomain: "first-choice-961d0.firebaseapp.com",
+  projectId: "first-choice-961d0",
+  storageBucket: "first-choice-961d0.firebasestorage.app",
+  messagingSenderId: "422146284663",
+  appId: "1:422146284663:web:fc579c653e9c3b6c36fa72",
 });
 
 const messaging = firebase.messaging();

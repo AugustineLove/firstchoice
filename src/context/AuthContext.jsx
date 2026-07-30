@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
   if (user) initPushNotifications(authFetch);
+  if (user) listenForForegroundMessages();
 }, [user]);
 
   async function fetchMe(t) {

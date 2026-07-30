@@ -20,7 +20,7 @@ export async function initPushNotifications(authFetch) {
     console.log('[push] permission:', permission);
     if (permission !== 'granted') return;
 
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const registration = await navigator.serviceWorker.register('public/firebase-messaging-sw.js');
     console.log('[push] service worker registered:', registration.scope);
 
     const messaging = getMessaging(app);
@@ -38,4 +38,21 @@ export async function initPushNotifications(authFetch) {
   } catch (err) {
     console.error('[push] init failed:', err);
   }
+}
+
+export function listenForForegroundMessages(onNotification) {
+  isSupported().then((supported) => {
+    if (!supported) return;
+    const messaging = getMessaging(app);
+    onMessage(messaging, (payload) => {
+      const { title, body } = payload.notification || {};
+      // show your own toast/UI here since browsers won't auto-display
+      // foreground pushes — you already have a toast system in
+      // SocketContext.jsx you could reuse, or use the Notification API directly:
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body, data: payload.data });
+      }
+      onNotification?.(payload);
+    });
+  });
 }
