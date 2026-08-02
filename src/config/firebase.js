@@ -20,7 +20,7 @@ export async function initPushNotifications(authFetch) {
     console.log('[push] permission:', permission);
     if (permission !== 'granted') return;
 
-    const registration = await navigator.serviceWorker.register('public/firebase-messaging-sw.js');
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     console.log('[push] service worker registered:', registration.scope);
 
     const messaging = getMessaging(app);
