@@ -4,7 +4,7 @@ import { initPushNotifications, listenForForegroundMessages } from '../config/fi
 
 const AuthContext = createContext(null);
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5500/api';
+const API = import.meta.env.VITE_API_URL || 'https://firstchoice-backend.onrender.com/api';
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
