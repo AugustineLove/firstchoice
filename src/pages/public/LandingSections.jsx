@@ -294,8 +294,8 @@ export function CTASection() {
             Download Customer App
           </button> */}
 
-          <button
-          style={{
+        <a 
+        style={{
             padding: '14px 28px',
             background: theme.greenLight,
             color: '#fff',
@@ -307,14 +307,11 @@ export function CTASection() {
             cursor: 'pointer',
             transition: 'background 0.2s',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = theme.green)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = theme.greenLight)}
-          onClick={() => {
-            window.location.href = "https://firstchoice-ten.vercel.app/FirstChoiceRiderv1.0.0.apk";
-          }}
-        >
-          Download Rider App
-        </button>
+        href="/FirstChoiceRiderv1.0.0.apk"
+        download
+      >
+        Download Rider App
+      </a>
 
           {['Register as a Vendor', 'Become a Rider'].map((label) => (
             <button
