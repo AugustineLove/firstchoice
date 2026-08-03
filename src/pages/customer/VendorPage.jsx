@@ -37,13 +37,15 @@ function categoryStyle(category) {
 }
 
 // NOTE ON THE FLOW BELOW: products are shown for browsing/reference —
-// tapping one either (a) drops a simple line into the order note, if it
-// has no variants/addons, or (b) opens the options picker so the customer
-// can choose a variant (size, weight...) and any addons (extras) before a
-// fully-priced, human-readable line gets appended to the note. The order
-// itself is still a single free-text note submitted to POST /orders along
-// with a compulsory delivery location and an optional "for a friend"
-// recipient — this screen never builds a structured items[] payload.
+// tapping one either (a) drops it straight into a structured "your
+// order" list, if it has no variants/addons, or (b) opens the options
+// picker so the customer can choose a variant (size, weight...) and any
+// addons (extras) before a fully-priced item gets added to that list.
+// The order note itself stays free text, reserved for anything the
+// picked items don't cover (e.g. "no pepper", "call when you arrive").
+// At submit time the picked items and the free-text note are combined
+// into one human-readable note that's sent to POST /orders — the
+// customer never has to read or edit that combined text themselves.
 
 function money(n) {
   return `GHS ${Number(n || 0).toFixed(2)}`;
@@ -74,12 +76,19 @@ export default function VendorPage() {
 
   const [note, setNote] = useState('');
 
-  // Running, informational-only total of everything added through the
-  // product picker / quick-add. The real total is still set by the vendor
-  // once they read the note — this is just so the customer isn't typing
-  // blind while building a long order.
-  const [pickedTotal, setPickedTotal] = useState(0);
-  const [pickedCount, setPickedCount] = useState(0);
+  // Structured list of everything picked from the product list / options
+  // picker. This drives the running subtotal AND the human-readable
+  // order summary shown to the customer — the note field itself is left
+  // alone for free-text extras. The real total is still set by the
+  // vendor once they read the order, this is an estimate.
+  const [pickedItems, setPickedItems] = useState([]);
+  // shape: { id, name, variantLabel, addons: string[], note, qty, unitPrice, lineTotal }
+
+  const pickedTotal = useMemo(
+    () => pickedItems.reduce((s, i) => s + i.lineTotal, 0),
+    [pickedItems]
+  );
+  const pickedCount = pickedItems.length;
 
   // ── product options picker ──
   const [activeProduct, setActiveProduct] = useState(null);
@@ -125,6 +134,12 @@ export default function VendorPage() {
   }
 
   const getPlaceholder = () => {
+//     if (products.length > 0) {
+//       return `Anything else we should know? e.g.
+// No pepper please
+// Call when you arrive
+// Leave with the security post`;
+//     }
     switch (vendor?.businessType) {
       case 'Food':
         return `List everything you'd like, e.g.
@@ -213,21 +228,34 @@ Any special instructions`;
 
   const destAddress = usingCurrentLocation && currentPosition
     ? `GPS: ${currentPosition.latitude.toFixed(5)}, ${currentPosition.longitude.toFixed(5)}`
-    : destination?.address ?? '';
+    : destination?.name ?? '';
   const destLat = usingCurrentLocation ? currentPosition?.latitude : destination?.latitude;
   const destLng = usingCurrentLocation ? currentPosition?.longitude : destination?.longitude;
   const hasDeliveryLocation = usingCurrentLocation ? !!currentPosition : !!destination;
 
-  function appendNoteLine(line, lineTotal) {
-    setNote((prev) => (!prev.trim() ? line : `${prev.trim()}\n${line}`));
-    setPickedTotal((t) => t + lineTotal);
-    setPickedCount((c) => c + 1);
+  function addPickedItem(item) {
+    setPickedItems((prev) => [
+      ...prev,
+      { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ...item },
+    ]);
+  }
+
+  function removePickedItem(itemId) {
+    setPickedItems((prev) => prev.filter((i) => i.id !== itemId));
   }
 
   // Quick-add: only reached for products with no variants and no addons.
-  function addProductToNote(product) {
-    const line = `1x ${product.name} — ${money(product.price)}`;
-    appendNoteLine(line, product.price || 0);
+  function addProductQuick(product) {
+    const price = Number(product.price || 0);
+    addPickedItem({
+      name: product.name,
+      variantLabel: null,
+      addons: [],
+      note: '',
+      qty: 1,
+      unitPrice: price,
+      lineTotal: price,
+    });
   }
 
   function productHasOptions(product) {
@@ -240,7 +268,7 @@ Any special instructions`;
     if (productHasOptions(product)) {
       setActiveProduct(product);
     } else {
-      addProductToNote(product);
+      addProductQuick(product);
     }
   }
 
@@ -266,8 +294,28 @@ Any special instructions`;
     );
   }
 
+  // Turns the structured picks + free-text note into the single
+  // human-readable string the vendor actually reads. Built once, at
+  // submit time — the customer never sees or edits this raw form.
+  function buildFinalNote() {
+    const itemLines = pickedItems.map((item) => {
+      let line = `${item.qty}x ${item.name}`;
+      if (item.variantLabel) line += ` (${item.variantLabel})`;
+      if (item.addons.length) line += `\n   + ${item.addons.join(', ')}`;
+      if (item.note) line += `\n   Note: ${item.note}`;
+      line += `\n   ${money(item.lineTotal)}`;
+      return line;
+    });
+
+    const extra = note.trim();
+    const parts = [...itemLines];
+    if (extra) parts.push(itemLines.length ? `Additional notes:\n${extra}` : extra);
+    return parts.join('\n\n');
+  }
+
+  const hasOrderContent = pickedItems.length > 0 || note.trim().length > 0;
   const friendDetailsValid = !forFriend || (recipientName.trim() && recipientPhone.trim());
-  const canSubmit = note.trim() && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
+  const canSubmit = hasOrderContent && hasDeliveryLocation && payment && friendDetailsValid && !submitting;
 
   async function submitOrder() {
     if (!canSubmit || submittingRef.current) return;
@@ -275,15 +323,17 @@ Any special instructions`;
     setSubmitting(true);
     setSubmitError(null);
     try {
+      console.log(`Subtotal: ${pickedTotal}, note: ${buildFinalNote()}`);
       const res = await authFetch('/orders', {
         method: 'POST',
         body: JSON.stringify({
           vendorId: id,
-          note: note.trim(),
+          note: buildFinalNote(),
           deliveryAddress: destAddress,
           deliveryLatitude: destLat,
           deliveryLongitude: destLng,
           paymentMethod: payment,
+          subtotal: pickedTotal,
           ...(forFriend ? {
             recipientName: recipientName.trim(),
             recipientPhone: recipientPhone.trim(),
@@ -310,8 +360,7 @@ Any special instructions`;
 
       setSubmitted(true);
       setNote('');
-      setPickedTotal(0);
-      setPickedCount(0);
+      setPickedItems([]);
       setDestination(null);
       setUsingCurrentLocation(false);
       setCurrentPosition(null);
@@ -399,7 +448,7 @@ Any special instructions`;
         {/* ── PRODUCTS ── */}
         <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '20px 0 6px' }}>Available Products</h2>
         <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 14px' }}>
-          Tap an item — if it has sizes or extras you'll get to choose, otherwise it's added straight away
+          Tap an item — if it has sizes or extras you'll get to choose, otherwise it's added straight to your order
         </p>
 
         {loading && (
@@ -420,8 +469,64 @@ Any special instructions`;
           </div>
         )}
 
+        {/* ── ORDER SUMMARY (structured, human-readable) ── */}
+        {pickedItems.length > 0 && (
+          <div style={{ margin: '24px 0 4px' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8, letterSpacing: 0.3 }}>YOUR ORDER</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pickedItems.map((item) => (
+                <div key={item.id} style={{
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10,
+                  background: '#fff', border: '1px solid #f0f0f0', borderRadius: 12, padding: '10px 12px',
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1117' }}>
+                      {item.name}{item.variantLabel ? ` (${item.variantLabel})` : ''}
+                    </div>
+                    {item.addons.length > 0 && (
+                      <div style={{ fontSize: 11.5, color: '#6b7280', marginTop: 2 }}>+ {item.addons.join(', ')}</div>
+                    )}
+                    {item.note && (
+                      <div style={{ fontSize: 11.5, color: '#9ca3af', marginTop: 2, fontStyle: 'italic' }}>&ldquo;{item.note}&rdquo;</div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#10b981' }}>{money(item.lineTotal)}</span>
+                    <button
+                      type="button"
+                      onClick={() => removePickedItem(item.id)}
+                      aria-label={`Remove ${item.name}`}
+                      style={{
+                        width: 22, height: 22, borderRadius: '50%', border: 'none', background: '#f3f4f6',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+                      }}
+                    >
+                      <X size={12} color="#6b7280" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8,
+              padding: '8px 12px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0',
+            }}>
+              <span style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
+                Estimated subtotal · {pickedCount} item{pickedCount !== 1 ? 's' : ''}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>{money(pickedTotal)}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+              Estimate only — we will confirm the final total
+            </div>
+          </div>
+        )}
+
         {/* ── ORDER NOTE ── */}
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '28px 0 10px' }}>What would you like to order?</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '28px 0 10px' }}>
+          {pickedItems.length > 0 ? 'Anything else?' : 'What would you like to order?'}
+        </h2>
 
         {submitted ? (
           <div style={{
@@ -439,30 +544,13 @@ Any special instructions`;
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              rows={6}
+              rows={pickedItems.length > 0 ? 3 : 6}
               placeholder={getPlaceholder()}
               style={{
                 width: '100%', border: '1px solid #e5e7eb', borderRadius: 14, padding: 16, fontFamily: 'inherit',
                 fontSize: 14, lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box', color: '#0f1117',
               }}
             />
-
-            {pickedCount > 0 && (
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8,
-                padding: '8px 12px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0',
-              }}>
-                <span style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>
-                  {pickedCount} item{pickedCount !== 1 ? 's' : ''} added from the menu
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>≈ {money(pickedTotal)}</span>
-              </div>
-            )}
-            {pickedCount > 0 && (
-              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-                Estimate only — {vendor?.businessName || 'the vendor'} confirms the final total
-              </div>
-            )}
 
             <div style={{ margin: '12px 0 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
@@ -644,7 +732,7 @@ Any special instructions`;
           product={activeProduct}
           theme={theme}
           onClose={() => setActiveProduct(null)}
-          onConfirm={(line, lineTotal) => { appendNoteLine(line, lineTotal); setActiveProduct(null); }}
+          onConfirm={(item) => { addPickedItem(item); setActiveProduct(null); }}
         />
       )}
 
@@ -886,9 +974,9 @@ Any special instructions`;
    Opened when a product has variant groups and/or addon groups.
    Lets the customer choose a variant (radio, price-adjusting),
    pick addons (checkbox or stepper, price-adjusting, "Free" when
-   0), set a quantity, and add a per-item note — then builds one
-   fully-priced, human-readable line and hands it back to the
-   parent to append to the order note.
+   0), set a quantity, and add a per-item note — then hands back a
+   structured, fully-priced item for the parent to add to the
+   order summary (never a pre-formatted string).
 ════════════════════════════════════════════ */
 function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
   const variantGroups = (product.variantGroups || []).map(g => ({
@@ -974,28 +1062,28 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
     setTouched(true);
     if (!canConfirm) return;
 
-    const parts = [`${quantity}x ${product.name}`];
-
     const variantNames = Object.values(selectedVariants).filter(Boolean).map(v => v.name);
-    if (variantNames.length) parts[0] += ` (${variantNames.join(', ')})`;
 
-    const addonBits = [];
+    const addons = [];
     for (const g of addonGroups) {
       for (const a of g.addons) {
         const qty = addonQty[a.id] || 0;
         if (qty <= 0) continue;
         const label = a.incrementable && qty > 1 ? `${qty}x ${a.name}` : a.name;
         const extra = addonExtraCost(a, qty);
-        addonBits.push(`${label} (${addonPriceLabel(extra)})`);
+        addons.push(`${label} (${addonPriceLabel(extra)})`);
       }
     }
 
-    let line = parts[0];
-    if (addonBits.length) line += ` + ${addonBits.join(', ')}`;
-    if (itemNote.trim()) line += ` — ${itemNote.trim()}`;
-    line += ` [${money(lineTotal)}]`;
-
-    onConfirm(line, lineTotal);
+    onConfirm({
+      name: product.name,
+      variantLabel: variantNames.length ? variantNames.join(', ') : null,
+      addons,
+      note: itemNote.trim(),
+      qty: quantity,
+      unitPrice,
+      lineTotal,
+    });
   }
 
   const cat = categoryStyle(product.category);
@@ -1063,9 +1151,9 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
               <div key={g.id} className="pom-group">
                 <div className="pom-group__header">
                   <span>{g.name}</span>
-                  <span className="pom-group__tag">
+                  {/* <span className="pom-group__tag">
                     {g.minSelect > 0 ? `Pick ${g.minSelect}–${g.maxSelect ?? 10}` : `Up to ${g.maxSelect ?? 10}`}
-                  </span>
+                  </span> */}
                 </div>
                 {g.addons.map((a) => {
                   const qty = addonQty[a.id] || 0;
@@ -1117,7 +1205,7 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
             <button type="button" onClick={() => setQuantity((q) => Math.min(50, q + 1))}><Plus size={14} /></button>
           </div>
           <button type="button" className="pom-confirm" style={{ background: theme.green }} onClick={handleConfirm}>
-            <span>Add to order note</span>
+            <span>Add to order</span>
             <span className="pom-confirm__price">{money(lineTotal)}</span>
           </button>
         </div>
@@ -1521,7 +1609,6 @@ function ProductCard({ product, hasOptions, theme, onClick }) {
           ? { background: `url(${product.images[0]}) center/cover` }
           : { background: `linear-gradient(135deg, ${cat.tintA}, ${cat.tintB})` }}
       >
-        {/* {!hasPhoto && cat.emoji} */}
         {hasPhoto ? '' : product.name[0]}
       </div>
 

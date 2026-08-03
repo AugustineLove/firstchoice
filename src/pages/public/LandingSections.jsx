@@ -282,7 +282,7 @@ export function CTASection() {
           Whether you're a customer, vendor, or rider — there's a place for you in Agona Nkwanta's most reliable delivery network.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <button
+          {/* <button
             style={{
               padding: '14px 28px', background: theme.greenLight, color: '#fff',
               border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700,
@@ -292,7 +292,30 @@ export function CTASection() {
             onMouseLeave={(e) => (e.currentTarget.style.background = theme.greenLight)}
           >
             Download Customer App
-          </button>
+          </button> */}
+
+          <button
+          style={{
+            padding: '14px 28px',
+            background: theme.greenLight,
+            color: '#fff',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 15,
+            fontWeight: 700,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = theme.green)}
+          onMouseLeave={(e) => (e.currentTarget.style.background = theme.greenLight)}
+          onClick={() => {
+            window.location.href = "https://firstchoice-ten.vercel.app/FirstChoiceRiderv1.0.0.apk";
+          }}
+        >
+          Download Rider App
+        </button>
+
           {['Register as a Vendor', 'Become a Rider'].map((label) => (
             <button
               key={label}
