@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ShoppingBag, Star, MapPin, Loader2, Store, Search, X, Flame, TrendingUp, Package, Truck, ArrowRight } from 'lucide-react';
+import { Bell, ShoppingBag, Star, MapPin, Loader2, Store, Search, X, Flame, TrendingUp, Package, Truck, ArrowRight, Tag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
@@ -13,6 +13,39 @@ const CATEGORIES = [
   { label: 'Pharmacy',    icon: '💊', value: 'Pharmacy',    bg: '#DBEAFE', fg: '#2563EB' },
   { label: 'Electronics', icon: '📱', value: 'Electronics', bg: '#EDE9FE', fg: '#7C3AED' },
 ];
+
+// Looks for `q` in a product's own name/category as well as every variant
+// and addon name nested under it, and returns one match descriptor per
+// hit. This is what lets "extra cheese" or "large" surface a vendor even
+// when neither word appears in the product's own name — and each match
+// carries enough (productId + variantId/addonId) for VendorPage to open
+// straight to that exact thing instead of just the vendor's front page.
+function findProductMatches(product, q) {
+  const matches = [];
+
+  const nameHit = product.name?.toLowerCase().includes(q) || product.category?.toLowerCase().includes(q);
+  if (nameHit) {
+    matches.push({ type: 'product', label: product.name, productId: product.id });
+  }
+
+  (product.variantGroups || []).forEach((g) => {
+    (g.variants || []).forEach((v) => {
+      if (v.name?.toLowerCase().includes(q)) {
+        matches.push({ type: 'variant', label: `${product.name} — ${v.name}`, productId: product.id, variantId: v.id });
+      }
+    });
+  });
+
+  (product.addonGroups || []).forEach((g) => {
+    (g.addons || []).forEach((a) => {
+      if (a.name?.toLowerCase().includes(q)) {
+        matches.push({ type: 'addon', label: `${product.name} — ${a.name}`, productId: product.id, addonId: a.id });
+      }
+    });
+  });
+
+  return matches;
+}
 
 export default function CustomerHome() {
   const { user, authFetch } = useAuth();
@@ -115,6 +148,11 @@ export default function CustomerHome() {
     buildProductIndex();
   }
 
+  // Every match (product name, variant name, or addon name) found across
+  // a vendor's product catalog, grouped back under that vendor. `matches`
+  // is null for a vendor that only matched on its own name/type, so the
+  // UI can tell "matched as a vendor" apart from "matched because of a
+  // specific item in their menu".
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -123,27 +161,25 @@ export default function CustomerHome() {
       (v) => v.businessName?.toLowerCase().includes(q) || v.businessType?.toLowerCase().includes(q)
     );
 
-    const matchedProducts = allProducts.filter(
-      (p) => p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q)
-    );
-
     const productsByVendor = new Map();
-    matchedProducts.forEach((p) => {
+    allProducts.forEach((p) => {
       if (!p.vendorId) return;
+      const matches = findProductMatches(p, q);
+      if (matches.length === 0) return;
       if (!productsByVendor.has(p.vendorId)) productsByVendor.set(p.vendorId, []);
-      productsByVendor.get(p.vendorId).push(p.name);
+      productsByVendor.get(p.vendorId).push(...matches);
     });
 
     const seen = new Set();
     const merged = vendorNameMatches.map((v) => {
       seen.add(v.id);
-      return { vendor: v, matchedProducts: productsByVendor.get(v.id) || null };
+      return { vendor: v, matches: productsByVendor.get(v.id) || null };
     });
-    productsByVendor.forEach((names, vendorId) => {
+    productsByVendor.forEach((matches, vendorId) => {
       if (seen.has(vendorId)) return;
       const vendor = allVendors.find((v) => v.id === vendorId);
       if (vendor) {
-        merged.push({ vendor, matchedProducts: names });
+        merged.push({ vendor, matches });
         seen.add(vendorId);
       }
     });
@@ -152,6 +188,18 @@ export default function CustomerHome() {
   }, [query, allVendors, allProducts]);
 
   const showingSearch = searchOpen && query.trim().length > 0;
+
+  // Takes the customer straight to the vendor page, and — when the hit
+  // that was clicked came from a specific product/variant/addon rather
+  // than just the vendor's own name — carries that along as router state
+  // so VendorPage can open right to it instead of leaving the customer to
+  // find it again themselves.
+  function goToVendor(vendorId, match) {
+    navigate(
+      `/vendor/${vendorId}`,
+      match ? { state: { focusProductId: match.productId, focusVariantId: match.variantId, focusAddonId: match.addonId } } : undefined
+    );
+  }
 
   // Responsive grid columns without relying on window.innerWidth at render
   // time (that only evaluates once per render pass and never reacts to an
@@ -207,7 +255,7 @@ export default function CustomerHome() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={openSearch}
-              placeholder="Search vendors or products..."
+              placeholder="Search vendors, products, or extras..."
               className="fc-topbar__search-input"
             />
             {query && (
@@ -481,7 +529,7 @@ export default function CustomerHome() {
             query={query}
             results={searchResults}
             theme={theme}
-            onVendorClick={(id) => navigate(`/vendor/${id}`)}
+            onVendorClick={goToVendor}
           />
         ) : (
           <>
@@ -657,6 +705,15 @@ function VendorCardSkeleton() {
   );
 }
 
+// A small badge distinguishing what kind of thing matched — a plain
+// product, a variant ("Large"), or an addon ("Extra cheese") — so the
+// customer can tell at a glance why a vendor showed up.
+function MatchTypeIcon({ type }) {
+  if (type === 'variant') return <Tag size={11} />;
+  if (type === 'addon') return <Package size={11} />;
+  return null;
+}
+
 function SearchResults({ loading, query, results, theme, onVendorClick }) {
   return (
     <div style={{ marginTop: 22, minHeight: 300 }}>
@@ -673,34 +730,58 @@ function SearchResults({ loading, query, results, theme, onVendorClick }) {
             {loading && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite', color: '#9ca3af' }} />}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {results.map(({ vendor, matchedProducts }) => (
-              <div key={vendor.id} onClick={() => onVendorClick(vendor.id)} style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14,
-                border: '1px solid #f0f0f0', background: '#fff', cursor: 'pointer',
+            {results.map(({ vendor, matches }) => (
+              <div key={vendor.id} style={{
+                padding: 12, borderRadius: 14, border: '1px solid #f0f0f0', background: '#fff',
               }}>
-                <div style={{
-                  width: 50, height: 50, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, background: vendor.logo ? `url(${vendor.logo}) center/cover` : 'linear-gradient(135deg, #10b981, #34d399)',
-                }}>
-                  {!vendor.logo && '🏪'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#0f1117' }}>{vendor.businessName}</div>
-                  {matchedProducts ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                      <Package size={11} color={theme.green} />
-                      <span style={{ fontSize: 11, color: theme.green, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        Has: {matchedProducts.slice(0, 2).join(', ')}{matchedProducts.length > 2 ? ` +${matchedProducts.length - 2} more` : ''}
-                      </span>
-                    </div>
-                  ) : (
+                {/* Tapping the vendor row itself: go to the vendor, focused
+                    on the first match if there is one (e.g. searched "egg"
+                    and this vendor's top hit is an addon called Egg). */}
+                <div
+                  onClick={() => onVendorClick(vendor.id, matches?.[0] || null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                >
+                  <div style={{
+                    width: 50, height: 50, borderRadius: 12, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 22, background: vendor.logo ? `url(${vendor.logo}) center/cover` : 'linear-gradient(135deg, #10b981, #34d399)',
+                  }}>
+                    {!vendor.logo && '🏪'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#0f1117' }}>{vendor.businessName}</div>
                     <div style={{ fontSize: 12, color: '#9ca3af' }}>{vendor.businessType}</div>
-                  )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                    <Star size={12} fill="#f59e0b" color="#f59e0b" />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>{(vendor.rating ?? 0).toFixed(1)}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                  <Star size={12} fill="#f59e0b" color="#f59e0b" />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280' }}>{(vendor.rating ?? 0).toFixed(1)}</span>
-                </div>
+
+                {/* Individual chips per matched product/variant/addon — each
+                    tappable on its own, so a search that hit three different
+                    items at the same vendor can jump straight to any one. */}
+                {matches && matches.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                    {matches.slice(0, 5).map((m, i) => (
+                      <button
+                        key={`${m.productId}-${m.variantId || m.addonId || 'p'}-${i}`}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onVendorClick(vendor.id, m); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 5, border: 'none', cursor: 'pointer',
+                          background: `${theme.green}14`, color: theme.green, fontSize: 11, fontWeight: 700,
+                          padding: '5px 10px', borderRadius: 50, fontFamily: 'inherit',
+                        }}
+                      >
+                        <MatchTypeIcon type={m.type} />
+                        {m.label}
+                      </button>
+                    ))}
+                    {matches.length > 5 && (
+                      <span style={{ fontSize: 11, color: '#9ca3af', alignSelf: 'center' }}>+{matches.length - 5} more</span>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

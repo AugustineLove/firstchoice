@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Star, MapPin, Clock, Loader2, Send, CheckCircle2, Package,
   Search, X, LocateFixed, User, Plus, Minus, ChevronRight, Check, MessageSquareText,
@@ -46,6 +46,14 @@ function categoryStyle(category) {
 // At submit time the picked items and the free-text note are combined
 // into one human-readable note that's sent to POST /orders — the
 // customer never has to read or edit that combined text themselves.
+//
+// NOTE ON SEARCH-FOCUS: the customer can arrive here from a home-page
+// search that matched a specific product, variant, or addon (not just
+// the vendor). CustomerHome passes that match down via router state
+// (focusProductId / focusVariantId / focusAddonId) — see the effect
+// below that opens the right product and scrolls/highlights the exact
+// thing that matched, instead of just dropping the customer on the
+// vendor page and making them hunt for it again.
 
 function money(n) {
   return `GHS ${Number(n || 0).toFixed(2)}`;
@@ -66,8 +74,16 @@ function filterLocations(all, query) {
 export default function VendorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { authFetch } = useAuth();
   const { theme } = useTheme();
+
+  // What (if anything) the customer searched for and landed here on.
+  const focusProductId = routerLocation.state?.focusProductId || null;
+  const focusVariantId = routerLocation.state?.focusVariantId || null;
+  const focusAddonId = routerLocation.state?.focusAddonId || null;
+  const appliedFocusRef = useRef(false);
+  const [highlightedProductId, setHighlightedProductId] = useState(null);
 
   const [vendor, setVendor]     = useState(null);
   const [products, setProducts] = useState([]);
@@ -224,6 +240,35 @@ Any special instructions`;
   useEffect(() => { loadLocations(); }, [loadLocations]);
   useEffect(() => { loadRatingSummary(); }, [loadRatingSummary]);
 
+  function productHasOptions(product) {
+    const hasVariants = (product.variantGroups || []).some(g => (g.variants || []).some(v => v.available !== false));
+    const hasAddons   = (product.addonGroups   || []).some(g => (g.addons   || []).some(a => a.available !== false));
+    return hasVariants || hasAddons;
+  }
+
+  // Runs once products have loaded: if the customer arrived here from a
+  // search match, jump straight to the thing they searched for — open
+  // the options picker on the matched product (and let it scroll/highlight
+  // the specific variant or addon), or if the product has no options,
+  // just scroll the product row into view and flash it.
+  useEffect(() => {
+    if (appliedFocusRef.current) return;
+    if (loading || products.length === 0 || !focusProductId) return;
+    const product = products.find((p) => p.id === focusProductId);
+    if (!product) return;
+    appliedFocusRef.current = true;
+
+    if (productHasOptions(product)) {
+      setActiveProduct(product);
+    } else {
+      setHighlightedProductId(product.id);
+      requestAnimationFrame(() => {
+        document.getElementById(`product-row-${product.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      setTimeout(() => setHighlightedProductId(null), 2600);
+    }
+  }, [loading, products, focusProductId]);
+
   const style = TYPE_STYLE[vendor?.businessType?.toLowerCase()] || { emoji: '🏪', a: '#10B981', b: '#34D399' };
 
   const destAddress = usingCurrentLocation && currentPosition
@@ -256,12 +301,6 @@ Any special instructions`;
       unitPrice: price,
       lineTotal: price,
     });
-  }
-
-  function productHasOptions(product) {
-    const hasVariants = (product.variantGroups || []).some(g => (g.variants || []).some(v => v.available !== false));
-    const hasAddons   = (product.addonGroups   || []).some(g => (g.addons   || []).some(a => a.available !== false));
-    return hasVariants || hasAddons;
   }
 
   function handleProductTap(product) {
@@ -464,7 +503,15 @@ Any special instructions`;
         {!loading && products.length > 0 && (
           <div className="vp-product-list" style={{ marginBottom: 8 }}>
             {products.map((p) => (
-              <ProductCard key={p.id} product={p} hasOptions={productHasOptions(p)} theme={theme} onClick={() => handleProductTap(p)} />
+              <ProductCard
+                key={p.id}
+                id={`product-row-${p.id}`}
+                highlighted={highlightedProductId === p.id}
+                product={p}
+                hasOptions={productHasOptions(p)}
+                theme={theme}
+                onClick={() => handleProductTap(p)}
+              />
             ))}
           </div>
         )}
@@ -731,6 +778,8 @@ Any special instructions`;
         <ProductOptionsModal
           product={activeProduct}
           theme={theme}
+          focusVariantId={focusProductId === activeProduct.id ? focusVariantId : null}
+          focusAddonId={focusProductId === activeProduct.id ? focusAddonId : null}
           onClose={() => setActiveProduct(null)}
           onConfirm={(item) => { addPickedItem(item); setActiveProduct(null); }}
         />
@@ -881,10 +930,24 @@ Any special instructions`;
           border: 1px solid #f0f0f0;
           padding: 8px;
           cursor: pointer;
-          transition: transform 0.1s ease, border-color 0.12s ease;
+          transition: transform 0.1s ease, border-color 0.12s ease, background 0.3s ease;
         }
         .vp-product-row:active {
           transform: scale(0.985);
+        }
+
+        /* Flash used when a customer lands here from a home-page search
+           match on a plain product (no options to open a modal for) —
+           gives the same "here's the thing you searched for" landing
+           feedback the options modal gives for variants/addons. */
+        .vp-product-row--highlight {
+          border-color: #10b981;
+          box-shadow: 0 0 0 3px rgba(16,185,129,0.22);
+          animation: vp-highlight-pulse 1.3s ease-in-out 2;
+        }
+        @keyframes vp-highlight-pulse {
+          0%, 100% { background: #fff; }
+          50% { background: #ecfdf5; }
         }
 
         .vp-row__thumb {
@@ -977,8 +1040,13 @@ Any special instructions`;
    0), set a quantity, and add a per-item note — then hands back a
    structured, fully-priced item for the parent to add to the
    order summary (never a pre-formatted string).
+
+   focusVariantId / focusAddonId (optional): when the customer landed
+   here from a home-page search match on a specific variant or addon,
+   this scrolls to it and flashes a highlight so they land exactly on
+   the thing they searched for, not just "a modal for the product".
 ════════════════════════════════════════════ */
-function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
+function ProductOptionsModal({ product, theme, focusVariantId, focusAddonId, onClose, onConfirm }) {
   const variantGroups = (product.variantGroups || []).map(g => ({
     ...g,
     variants: (g.variants || []).filter(v => v.available !== false),
@@ -994,11 +1062,32 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
   const [addonQty, setAddonQty] = useState({}); // addonId -> qty (0 = not selected)
   const [itemNote, setItemNote] = useState('');
   const [touched, setTouched] = useState(false);
+  const [highlightTarget, setHighlightTarget] = useState(null); // 'variant-option-<id>' | 'addon-option-<id>'
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  // Scroll to and briefly flash the exact variant/addon the customer
+  // searched for, once the sheet has finished its open animation.
+  useEffect(() => {
+    const targetId = focusVariantId
+      ? `variant-option-${focusVariantId}`
+      : focusAddonId
+        ? `addon-option-${focusAddonId}`
+        : null;
+    if (!targetId) return;
+    const openTimer = setTimeout(() => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setHighlightTarget(targetId);
+        setTimeout(() => setHighlightTarget(null), 2200);
+      }
+    }, 220);
+    return () => clearTimeout(openTimer);
+  }, [focusVariantId, focusAddonId]);
 
   function pickVariant(groupId, variant) {
     setSelectedVariants((prev) => ({ ...prev, [groupId]: variant }));
@@ -1025,12 +1114,33 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
     });
   }
 
+  // Mirrors calculateAddonPrice() on the backend exactly, including the
+  // 'halves' and 'custom' increment modes, so the price shown here is
+  // always identical to what the order will actually be charged:
+  //   multiple -> base * qty
+  //   free     -> base + (qty - 1) * 1
+  //   halves   -> base + (qty - 1) * (base / 2)
+  //   custom   -> base + (qty - 1) * customIncrementValue (default 1)
   function addonExtraCost(addon, qty) {
     if (qty <= 0) return 0;
+    const quantity = Math.max(1, Math.floor(qty));
     const price = Number(addon.price || 0);
-    if (!addon.incrementable) return price;
-    if (addon.incrementMode === 'free') return price + (qty - 1);
-    return price * qty; // 'multiple' (default)
+    if (!addon.incrementable || quantity <= 1) return price;
+
+    switch (addon.incrementMode) {
+      case 'multiple':
+        return price * quantity;
+      case 'free':
+        return price + (quantity - 1) * 1;
+      case 'halves':
+        return price + (quantity - 1) * (price / 2);
+      case 'custom': {
+        const step = addon.customIncrementValue && addon.customIncrementValue > 0 ? addon.customIncrementValue : 1;
+        return price + (quantity - 1) * step;
+      }
+      default:
+        return price * quantity;
+    }
   }
 
   const variantsTotal = useMemo(
@@ -1123,11 +1233,13 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
               </div>
               {g.variants.map((v) => {
                 const active = selectedVariants[g.id]?.id === v.id;
+                const isHighlighted = highlightTarget === `variant-option-${v.id}`;
                 return (
                   <button
                     type="button"
                     key={v.id}
-                    className={`pom-option ${active ? 'pom-option--active' : ''}`}
+                    id={`variant-option-${v.id}`}
+                    className={`pom-option ${active ? 'pom-option--active' : ''} ${isHighlighted ? 'pom-option--highlight' : ''}`}
                     onClick={() => pickVariant(g.id, active && !g.required ? null : v)}
                   >
                     <span className="pom-option__radio">{active && <Check size={11} color="#fff" />}</span>
@@ -1158,13 +1270,24 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
                 {g.addons.map((a) => {
                   const qty = addonQty[a.id] || 0;
                   const active = qty > 0;
+                  // The price shown updates live as the stepper changes qty,
+                  // reflecting the addon's own increment mode (multiple /
+                  // free / halves / custom) — not just the flat base price.
+                  const displayPrice = active ? addonExtraCost(a, qty) : Number(a.price || 0);
+                  const isHighlighted = highlightTarget === `addon-option-${a.id}`;
                   return (
-                    <div key={a.id} className={`pom-addon ${active ? 'pom-addon--active' : ''}`}>
+                    <div
+                      key={a.id}
+                      id={`addon-option-${a.id}`}
+                      className={`pom-addon ${active ? 'pom-addon--active' : ''} ${isHighlighted ? 'pom-addon--highlight' : ''}`}
+                    >
                       <button type="button" className="pom-addon__main" onClick={() => toggleAddon(g, a)}>
                         <span className="pom-option__radio pom-option__radio--square">{active && <Check size={11} color="#fff" />}</span>
-                        <span className="pom-option__name">{a.name}</span>
-                        <span className={`pom-option__price ${Number(a.price || 0) === 0 ? 'pom-option__price--free' : ''}`}>
-                          {addonPriceLabel(a.price)}
+                        <span className="pom-option__name">
+                          {active && qty > 1 ? `${a.name} ×${qty}` : a.name}
+                        </span>
+                        <span className={`pom-option__price ${Number(a.price || 0) === 0 && !active ? 'pom-option__price--free' : ''}`}>
+                          {addonPriceLabel(displayPrice)}
                         </span>
                       </button>
                       {active && a.incrementable && (
@@ -1269,6 +1392,16 @@ function ProductOptionsModal({ product, theme, onClose, onConfirm }) {
         }
         .pom-option--active, .pom-addon--active .pom-addon__main {
           border-color: #10b981; background: #f0fdf4;
+        }
+        /* Flash used when the customer landed here from a home-page
+           search match on this exact variant/addon. */
+        .pom-option--highlight, .pom-addon--highlight .pom-addon__main {
+          border-color: #10b981 !important;
+          animation: pom-highlight-pulse 1.1s ease-in-out 2;
+        }
+        @keyframes pom-highlight-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.35); }
+          50% { box-shadow: 0 0 0 6px rgba(16,185,129,0.22); }
         }
         .pom-option__radio {
           width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid #d1d5db;
@@ -1596,13 +1729,13 @@ function PayChip({ value, label, selected, onSelect, theme }) {
   );
 }
 
-function ProductCard({ product, hasOptions, theme, onClick }) {
+function ProductCard({ id, highlighted, product, hasOptions, theme, onClick }) {
   const cat = categoryStyle(product.category);
   const hasPhoto = !!product.images?.[0];
   const actionColor = theme?.green || '#10B981';
 
   return (
-    <div onClick={onClick} className="vp-product-row">
+    <div id={id} onClick={onClick} className={`vp-product-row${highlighted ? ' vp-product-row--highlight' : ''}`}>
       <div
         className={`vp-row__thumb ${hasPhoto ? 'vp-row__thumb--photo' : 'vp-row__thumb--placeholder'}`}
         style={hasPhoto

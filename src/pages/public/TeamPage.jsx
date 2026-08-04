@@ -12,7 +12,7 @@ const TEAM = [
     role: 'Chief Executive Officer (CEO)',
     bio: "An Information Technology professional from the University of Ghana with a passion for solving everyday challenges through technology. Austin leads the company's vision, strategy, and partnerships, driving FirstChoice Express toward becoming the leading on-demand delivery platform in Ghana.",
     tags: ['Leadership', 'Strategy', 'Partnerships'],
-    colorKey: 'green',
+    colorKey: 'dark',
     social: { twitter: '#', linkedin: '#' },
   },
 
@@ -22,7 +22,7 @@ const TEAM = [
     role: 'Chief Operating Officer (COO)',
     bio: 'An Information Technology professional from Takoradi Technical University responsible for overseeing daily operations, logistics coordination, and ensuring smooth service delivery across the FirstChoice Express network.',
     tags: ['Operations', 'Logistics', 'Management'],
-    colorKey: 'greenMid',
+    colorKey: 'yellow',
     social: { linkedin: '#' },
   },
 
@@ -32,7 +32,7 @@ const TEAM = [
   role: 'Project Coordinator (PC)',
   bio: 'A dedicated member of the FirstChoice Express team who plays a key role in driving the project forward. Collins helps coordinate activities, supports team operations, and ensures plans are turned into action as the company continues to grow.',
   tags: ['Coordination', 'Execution', 'Team Support'],
-  colorKey: 'greenLight',
+  colorKey: 'black',
   social: { linkedin: '#' },
 },
 
@@ -43,7 +43,7 @@ const TEAM = [
     bio: "A Computer Science graduate from the University of Ghana and the lead architect behind the FirstChoice Express platform. Augustine designed and developed the mobile apps, backend infrastructure, and web systems that power the company's services.",
     tags: ['Flutter', 'Node.js', 'System Architecture'],
     colorKey: 'amber',
-    social: { github: '#', linkedin: '#' },
+    social: { github: 'AugustineLove', linkedin: '#' },
   },
 
   {
@@ -52,14 +52,14 @@ const TEAM = [
   role: 'Head of Sales & Marketing (HoS)',
   bio: 'A Business Administration student at Takoradi Technical University with a passion for entrepreneurship and brand growth. Isaac leads sales and marketing initiatives, helping expand FirstChoice Express through customer engagement, strategic campaigns, and strong relationships with local businesses.',
   tags: ['Sales', 'Marketing', 'Business Development'],
-  colorKey: 'greenMid',
+  colorKey: 'blue',
   social: { linkedin: '#' },
 }, {
-  intials: "BB",
+  initials: "BB",
   name: 'Brace Benedict',
   role: 'Logistics Manger (LM)',
   bio: 'As the Logistic Manger, Brace Benedict oversee the coordination of deliveries to ensure orders are picked up and delivered efficiently and on time. Brace Benedict mange delivery schedules, optimize personnel, monitor logistics operation and work to ensure customers recieve reliable and timely service while maintaining high operational standards.',
-  tags:['Smart Delivery, On Time Delivery, Fast And Reliable'],
+  tags:['Smart Delivery', 'On Time Delivery', 'Fast And Reliable'],
   colorKey:'red',
   social: { instagram: 'paa_krah'},
 } 
@@ -178,8 +178,23 @@ function TeamCard({ member, theme }) {
         {member.social.twitter && (
           <a href={member.social.twitter} style={socialIconStyle(theme)}>𝕏</a>
         )}
+         {member.social.instagram && (
+          <a href={`https://instagram.com/${member.social.instagram}`} target="_blank" rel="noopener noreferrer" class="text-pink-600 hover:text-pink-700 transition-colors duration-300 dynamic-layout-preset">
+          <svg xmlns="http://w3.org" class="w-8 h-8" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+        </a>
+        )}
         {member.social.github && (
-          <a href={member.social.github} style={socialIconStyle(theme)}>⌥</a>
+          <a href={`https://github.com/${member.social.github}`} target="_blank" rel="noopener noreferrer" class="text-gray-800 hover:text-gray-600 transition-colors duration-200">
+          <svg class="h-6 w-6" aria-hidden="true" fill="currentColor" viewBox="0 0 40 40">
+            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+          </svg>
+          <span class="sr-only">GitHub Account</span>
+        </a>
+
         )}
       </div>
     </div>
