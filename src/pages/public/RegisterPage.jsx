@@ -114,7 +114,8 @@ export default function RegisterPage() {
 
           {/* EMAIL (optional) */}
           <div>
-            <label style={labelStyle}>Email <span style={{ fontWeight:400, color:'#9ca3af' }}>(optional)</span></label>
+            {/* <label style={labelStyle}>Email <span style={{ fontWeight:400, color:'#9ca3af' }}>(optional)</span></label> */}
+            <label style={labelStyle}>Email</label>
             <div style={{ position:'relative' }}>
               <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#9ca3af', fontSize:15 }}>@</span>
               <input type="email" placeholder="kofi@example.com" value={form.email} onChange={set('email')} style={inputStyle}
