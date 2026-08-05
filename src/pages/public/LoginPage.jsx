@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Phone, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Phone, Lock, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -205,7 +205,13 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-
+            
+            <div className="flex justify-end items-right mb-2">
+              <Link to="/forgot-password" style={{ fontSize:13, color:theme.green, fontWeight:600, textDecoration:'none' }}>
+                Forgot your password?
+              </Link>
+            </div>
+              
             {/* SUBMIT */}
             <button
               type="submit"
@@ -257,6 +263,14 @@ export default function LoginPage() {
             >
               🏍️ Register as a Rider
             </Link> */}
+            <div>
+              <Link
+                to="/"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#6b7280', fontSize: 13, fontWeight: 600, textDecoration: 'none', marginBottom: 28 }}
+              >
+                <ArrowLeft size={15} /> Back to home
+              </Link>
+            </div>
             <Link to="/register" style={{
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
               height:46, border:`1.5px solid ${theme.border}`, borderRadius:10,

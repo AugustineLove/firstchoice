@@ -30,6 +30,7 @@ import NotificationToast from './components/NotificationToast'
 import InstallPrompt from './components/InstallPrompt'
 import { useNotifications } from './providers/useNotifications'
 import ProfileEditPage from './pages/customer/Profile/ProfileEditingPage'
+import ForgotPassword from './pages/ForgotPassword'
 
 export default function App() {
   const { toast, dismissToast, openToast } = useNotifications();
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/register"      element={<RegisterPage />} />
               <Route path="/register/:type" element={<RegisterPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               {/* Admin */}
               <Route path="/admin/dashboard" element={
