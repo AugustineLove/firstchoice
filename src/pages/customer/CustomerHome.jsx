@@ -111,8 +111,21 @@ export default function CustomerHome() {
   );
   const trending = useMemo(() => [...vendors].reverse().slice(0, 8), [vendors]);
 
+  // Builds the searchable product index. The bulk `/products` endpoint
+  // doesn't depend on `allVendors` at all, so it's attempted regardless of
+  // whether the vendor list has loaded yet. Only the per-vendor *fallback*
+  // (used when there's no bulk endpoint) actually needs `allVendors` — if
+  // that isn't ready yet, we bail WITHOUT marking the index as built, so
+  // the effect below can retry automatically once vendors do arrive.
+  //
+  // Previously this bailed out (and was never retried) if `allVendors` was
+  // still empty when the search box was first focused — e.g. tapping
+  // search while the `/vendors` request was still in flight. That left
+  // `productIndexBuilt` stuck `false` with an empty `allProducts`, so every
+  // search silently returned nothing until a full page reload reset state
+  // and happened to let `/vendors` resolve before search was touched again.
   const buildProductIndex = useCallback(async () => {
-    if (productIndexBuilt || productIndexLoading || allVendors.length === 0) return;
+    if (productIndexBuilt || productIndexLoading) return;
     setProductIndexLoading(true);
     try {
       const res = await authFetch('/products');
@@ -125,6 +138,13 @@ export default function CustomerHome() {
       }
       throw new Error('no bulk products endpoint');
     } catch {
+      if (allVendors.length === 0) {
+        // Nothing to build the per-vendor fallback from yet — leave
+        // productIndexBuilt false so the retry effect below tries again
+        // once allVendors is populated, instead of giving up permanently.
+        setProductIndexLoading(false);
+        return;
+      }
       try {
         const perVendor = await Promise.all(
           allVendors.map((v) =>
@@ -147,6 +167,16 @@ export default function CustomerHome() {
     setSearchOpen(true);
     buildProductIndex();
   }
+
+  // Retry net: if the search box was opened before allVendors finished
+  // loading (buildProductIndex bailed out above without setting
+  // productIndexBuilt), this fires again as soon as allVendors is ready —
+  // so search recovers on its own instead of requiring a page refresh.
+  useEffect(() => {
+    if (searchOpen && !productIndexBuilt && !productIndexLoading) {
+      buildProductIndex();
+    }
+  }, [searchOpen, allVendors, productIndexBuilt, productIndexLoading, buildProductIndex]);
 
   // Every match (product name, variant name, or addon name) found across
   // a vendor's product catalog, grouped back under that vendor. `matches`
