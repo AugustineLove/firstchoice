@@ -27,7 +27,10 @@ export default function OrdersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authFetch('/users/me/orders'); // adjust to your customer-scoped orders endpoint
+      const res = await authFetch('/users/me/orders');
+
+      
+
       const json = await res.json();
       if (json.success) setOrders(json.data.orders ?? json.data);
       else setError(json.message || 'Could not load your orders');
