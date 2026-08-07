@@ -142,7 +142,7 @@ const [recipientPhone, setRecipientPhone] = useState('');
   const destLng = destUsingCurrent ? destCurrentPos?.longitude : destination?.longitude;
   const destAddress = destUsingCurrent && destCurrentPos
     ? `GPS: ${destCurrentPos.latitude.toFixed(5)}, ${destCurrentPos.longitude.toFixed(5)}`
-    : destination?.address ?? '';
+    : destination?.name ?? '';
   const hasDest = destUsingCurrent ? !!destCurrentPos : !!destination;
 
   const fee = useMemo(
