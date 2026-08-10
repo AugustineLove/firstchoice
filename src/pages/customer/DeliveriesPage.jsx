@@ -47,7 +47,35 @@ export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destL
   if (km <= 8) return 19;
   if (km <= 8.5) return 20;
   if (km <= 9) return 21;
-  return 25;
+  if (km <= 9.5) return 22;
+  if (km <= 10) return 23;
+  if (km <= 10.5) return 24;
+  if (km <= 11) return 25;
+  if (km <= 11.5) return 26;
+  if (km <= 12) return 27;
+  if (km <= 12.5) return 28;
+  if (km <= 13) return 29;
+  if (km <= 13.5) return 30;
+  if (km <= 14) return 31;
+  if (km <= 14.5) return 32;
+  if (km <= 15) return 33;
+  if (km <= 15.5) return 34;
+  if (km <= 16) return 35;
+  if (km <= 16.5) return 36;
+  if (km <= 17) return 37;
+  if (km <= 17.5) return 38;
+  if (km <= 18) return 39;
+  if (km <= 18.5) return 40;
+  if (km <= 19) return 41;
+  if (km <= 19.5) return 42;
+  if (km <= 20) return 43;
+  if (km <= 20.5) return 44;
+  if (km <= 21) return 45;
+  if (km <= 21.5) return 46;
+  if (km <= 22) return 47;
+  if (km <= 22.5) return 48;
+  if (km <= 23) return 49;
+  return 50;
 }
 
 function filterLocations(all, query) {
