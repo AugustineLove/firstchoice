@@ -897,7 +897,7 @@ function OrdersSection({ authFetch, theme }) {
     { key:'amount',   label:'Amount',   render: r => <span style={{ fontWeight:700, color:'#10b981' }}>GHS {r.totalAmount?.toFixed(2)}</span> },
     { key:'status',   label:'Status',   render: r => <StatusBadge status={r.orderStatus}/> },
     { key:'rider',    label:'Rider',    render: r => r.rider ? <span style={{ color:'#3b82f6', fontWeight:600 }}>{r.rider.user?.name}</span> : <span style={{ color:'#9ca3af' }}>Unassigned</span> },
-    { key:'date',     label:'Date',     render: r => new Date(r.createdAt).toLocaleDateString() },
+    { key:'date',     label:'Date',     render: r => new Date(r.createdAt).toLocaleString() },
     { key:'assign',   label:'Assign',   render: r => r.orderStatus === 'READY_FOR_PICKUP' ? (
       <div style={{ display:'flex', gap:6, alignItems:'center' }}>
         <select value={selectedRider[r.id]||''} onChange={e => setSelectedRider(p => ({...p,[r.id]:e.target.value}))}
