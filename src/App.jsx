@@ -21,6 +21,7 @@ import CartPage from './pages/customer/CartPage'
 import CheckoutPage from './pages/customer/CheckoutPage'
 import OrdersPage from './pages/customer/OrdersPage'
 import OrderTrackingPage from './pages/customer/OrderTrackingPage'
+import DeliveryTrackingPage from './pages/customer/DeliveryTrackingPage'
 import DeliveriesPage from './pages/customer/DeliveriesPage'
 import ProfilePage from './pages/customer/Profile/ProfilePage'
 import NotificationsPage from './pages/customer/NotificationsPage'
@@ -114,6 +115,9 @@ export default function App() {
               } />
               <Route path="/orders/:id" element={
                 <ProtectedRoute roles={['CUSTOMER']}><OrderTrackingPage /></ProtectedRoute>
+              } />
+              <Route path="/deliveries/:id" element={
+                <ProtectedRoute roles={['CUSTOMER']}><DeliveryTrackingPage /></ProtectedRoute>
               } />
               <Route path="/notifications" element={
                 <ProtectedRoute roles={['CUSTOMER']}><NotificationsPage /></ProtectedRoute>

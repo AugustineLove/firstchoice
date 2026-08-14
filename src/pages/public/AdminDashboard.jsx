@@ -45,6 +45,8 @@ const STATUS_STYLES = {
   VENDOR:          { color:'#065f46', bg:'#d1fae5' },
   RIDER:           { color:'#92400e', bg:'#fef3c7' },
   ADMIN:           { color:'#5b21b6', bg:'#ede9fe' },
+  PICKUP: { color:'#374151', bg:'#f3f4f6' },
+ERRAND: { color:'#7c3aed', bg:'#ede9fe' },
 };
 
 function StatusBadge({ status }) {
@@ -976,10 +978,18 @@ function DeliveriesSection({ authFetch, theme }) {
 
   const columns = [
     { key:'id',          label:'ID',          render: r => <span style={{ fontFamily:'monospace', fontSize:12, color:'#6b7280' }}>{r.id.slice(-8).toUpperCase()}</span> },
+    { key:'type', label:'Type', render: r => <StatusBadge status={r.type || 'PICKUP'}/> },
     { key:'customer',    label:'Customer',    render: r => <div><div style={{ fontWeight:700 }}>{r.customer?.name}</div><div style={{ color:'#9ca3af', fontSize:12 }}>{r.customer?.phone}</div></div> },
     { key:'pickup',      label:'Pickup',      render: r => <span style={{ fontSize:12 }}>{r.pickupAddress}</span> },
     { key:'destination', label:'Destination', render: r => <span style={{ fontSize:12 }}>{r.destinationAddress}</span> },
-    { key:'fee',         label:'Fee',         render: r => <span style={{ fontWeight:700, color:'#10b981' }}>GHS {r.estimatedFee}</span> },
+    { key:'fee', label:'Fee', render: r => (
+  <div>
+    <span style={{ fontWeight:700, color:'#10b981' }}>GHS {r.estimatedFee}</span>
+    {r.type === 'ERRAND' && r.itemsEstimatedTotal > 0 && (
+      <div style={{ fontSize:11, color:'#9ca3af' }}>+ GHS {Number(r.itemsEstimatedTotal).toFixed(2)} items</div>
+    )}
+  </div>
+) },
     { key:'status',      label:'Status',      render: r => <StatusBadge status={r.status}/> },
     { key:'rider',       label:'Rider',       render: r => r.rider ? <span style={{ color:'#3b82f6', fontWeight:600 }}>{r.rider.user?.name}</span> : <span style={{ color:'#9ca3af' }}>Unassigned</span> },
     { key:'assign',      label:'Assign',      render: r => r.status === 'PENDING' && !r.assignedRiderId ? (
@@ -1017,6 +1027,143 @@ function DeliveriesSection({ authFetch, theme }) {
   );
 }
 
+function SettingsSection({ authFetch, theme }) {
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [saved, setSaved] = useState(false);
+
+  const [pricingMode, setPricingMode] = useState('FIXED');
+  const [fixedPrice, setFixedPrice] = useState('20');
+  const [perItemPrice, setPerItemPrice] = useState('5');
+  const [pickupLocationId, setPickupLocationId] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [sRes, lRes] = await Promise.all([authFetch('/admin/settings'), authFetch('/locations')]);
+      const [sJson, lJson] = await Promise.all([sRes.json(), lRes.json()]);
+      if (lJson.success) setLocations(lJson.data.locations ?? lJson.data);
+      if (sJson.success) {
+        const s = sJson.data;
+        setPricingMode(s.errandPricingMode || 'FIXED');
+        setFixedPrice(String(s.errandFixedPrice ?? 20));
+        setPerItemPrice(String(s.errandPerItemPrice ?? 5));
+        setPickupLocationId(s.errandPickupLocationId || '');
+      }
+    } catch {}
+    setLoading(false);
+  }, [authFetch]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function save() {
+    setSaving(true); setError(null); setSaved(false);
+    try {
+      const res = await authFetch('/admin/settings', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          errandPricingMode: pricingMode,
+          errandFixedPrice: parseFloat(fixedPrice) || 0,
+          errandPerItemPrice: parseFloat(perItemPrice) || 0,
+          errandPickupLocationId: pickupLocationId || null,
+        }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Could not save settings');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setError(e.message || 'Something went wrong.');
+    }
+    setSaving(false);
+  }
+
+  if (loading) {
+    return <div style={{ display:'flex', justifyContent:'center', padding:60 }}><Loader2 size={24} style={{ animation:'spin 1s linear infinite', color: theme.green }}/></div>;
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize:22, fontWeight:900, color:'#0f1117', margin:0 }}>Settings</h2>
+        <p style={{ color:'#6b7280', fontSize:14, margin:'4px 0 0' }}>Platform-wide configuration</p>
+      </div>
+
+      <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', padding:'22px 24px', marginBottom:20, maxWidth:640 }}>
+        <h3 style={{ fontSize:15, fontWeight:800, color:'#0f1117', margin:'0 0 4px' }}>Errand Pricing</h3>
+        <p style={{ fontSize:12, color:'#9ca3af', margin:'0 0 18px' }}>
+          Controls how much is charged on top of the delivery fee when a customer books an errand.
+        </p>
+
+        <div style={{ display:'flex', gap:10, marginBottom:18 }}>
+          <PricingModeCard active={pricingMode==='FIXED'} onClick={() => setPricingMode('FIXED')} theme={theme}
+            title="Fixed errand price" desc="One flat fee added to every errand, regardless of item count." />
+          <PricingModeCard active={pricingMode==='PER_ITEM'} onClick={() => setPricingMode('PER_ITEM')} theme={theme}
+            title="Per-item price" desc="Charge a fee for each item line the customer adds to the errand list." />
+        </div>
+
+        {pricingMode === 'FIXED' ? (
+          <FormField label="Fixed errand price (GHS)">
+            <input style={fieldStyle} value={fixedPrice} onChange={e=>setFixedPrice(e.target.value)} inputMode="decimal" placeholder="20"/>
+          </FormField>
+        ) : (
+          <FormField label="Price per errand item (GHS)">
+            <input style={fieldStyle} value={perItemPrice} onChange={e=>setPerItemPrice(e.target.value)} inputMode="decimal" placeholder="5"/>
+          </FormField>
+        )}
+
+        <FormField label="Errand pickup location">
+          <select style={fieldStyle} value={pickupLocationId} onChange={e=>setPickupLocationId(e.target.value)}>
+            <option value="">Select a saved location…</option>
+            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+          <div style={{ fontSize:11, color:'#9ca3af', marginTop:6 }}>
+            Every errand request will use this as its pickup point (e.g. "Agona Nkwanta Market"). Add it under Locations first if it's missing from the list.
+          </div>
+        </FormField>
+
+        {error && <div style={{ background:'#fef2f2', color:'#dc2626', borderRadius:8, padding:'10px 14px', fontSize:13, marginTop:10 }}>{error}</div>}
+        {saved && <div style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:8, padding:'10px 14px', fontSize:13, marginTop:10 }}>Settings saved.</div>}
+
+        <button onClick={save} disabled={saving || !pickupLocationId} style={{
+          marginTop:16, height:42, padding:'0 20px', border:'none', borderRadius:10, fontWeight:800, fontSize:13, fontFamily:'inherit',
+          background: (saving || !pickupLocationId) ? '#d1d5db' : theme.green, color:'#fff', cursor: (saving||!pickupLocationId) ? 'not-allowed':'pointer',
+          display:'flex', alignItems:'center', gap:8,
+        }}>
+          {saving ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving...</> : 'Save Settings'}
+        </button>
+      </div>
+
+      <div style={{ background:'#fff', borderRadius:14, border:'1px dashed #e5e7eb', padding:'22px 24px', maxWidth:640 }}>
+        <h3 style={{ fontSize:15, fontWeight:800, color:'#9ca3af', margin:'0 0 4px' }}>More settings — coming soon</h3>
+        <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>
+          This is where future platform settings (delivery pricing tiers, payout schedules, notification templates, etc.) will live.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function PricingModeCard({ active, onClick, title, desc, theme }) {
+  return (
+    <button type="button" onClick={onClick} style={{
+      flex:1, textAlign:'left', padding:14, borderRadius:12, cursor:'pointer', fontFamily:'inherit',
+      border: `1.5px solid ${active ? theme.green : '#e5e7eb'}`,
+      background: active ? `${theme.green}0f` : '#f9fafb',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+        <div style={{ width:16, height:16, borderRadius:'50%', border:`2px solid ${active?theme.green:'#d1d5db'}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {active && <div style={{ width:8, height:8, borderRadius:'50%', background:theme.green }}/>}
+        </div>
+        <span style={{ fontSize:13, fontWeight:700, color:'#0f1117' }}>{title}</span>
+      </div>
+      <div style={{ fontSize:11, color:'#9ca3af', paddingLeft:24 }}>{desc}</div>
+    </button>
+  );
+}
+
 /* ═══════════════════════════════════════════════
    MAIN ADMIN DASHBOARD
 ═══════════════════════════════════════════════ */
@@ -1027,6 +1174,7 @@ const NAV_ITEMS = [
   { id:'vendors',     label:'Vendors',     icon:<Store size={18}/> },
   { id:'riders',      label:'Riders',      icon:<Bike size={18}/> },
   { id:'users',       label:'Users',       icon:<Users size={18}/> },
+  { id:'settings', label:'Settings', icon:<Settings size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -1059,6 +1207,7 @@ export default function AdminDashboard() {
     riders:     <RidersSection authFetch={authFetch} theme={theme}/>,
     orders:     <OrdersSection authFetch={authFetch} theme={theme}/>,
     deliveries: <DeliveriesSection authFetch={authFetch} theme={theme}/>,
+    settings: <SettingsSection authFetch={authFetch} theme={theme}/>,
   };
 
   return (
