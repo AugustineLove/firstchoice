@@ -600,7 +600,7 @@ export default function DeliveriesPage() {
                     <span style={{ fontSize: 22, fontWeight: 800, color: theme.green }}>GHS {(fee + itemsEstimatedTotal).toFixed(2)}</span>
                   </div>
                   <div style={{ fontSize: 10.5, color: '#9ca3af', lineHeight: 1.4 }}>
-                    Item cost is an estimate — you'll settle the exact amount with your errand runner. Delivery + errand fee is what you pay FirstChoice.
+                    Item cost is an estimate, you'll settle the exact amount with your errand runner. Delivery + errand fee is what you pay FirstChoice.
                   </div>
                 </>
               ) : (
