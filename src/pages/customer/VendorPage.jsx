@@ -83,13 +83,14 @@ export default function VendorPage() {
   const focusVariantId = routerLocation.state?.focusVariantId || null;
   const focusAddonId = routerLocation.state?.focusAddonId || null;
   const appliedFocusRef = useRef(false);
+  
   const [highlightedProductId, setHighlightedProductId] = useState(null);
 
   const [vendor, setVendor]     = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
-
+  const isElectronics = vendor?.businessType === 'Electronics';
   const [note, setNote] = useState('');
 
   // Structured list of everything picked from the product list / options
@@ -269,6 +270,18 @@ Any special instructions`;
     }
   }, [loading, products, focusProductId]);
 
+  // Picked up when we return here from ProductDetailPage's "Add to order".
+  const appliedAddItemRef = useRef(false);
+  useEffect(() => {
+    if (appliedAddItemRef.current) return;
+    const item = routerLocation.state?.addItem;
+    if (!item) return;
+    appliedAddItemRef.current = true;
+    addPickedItem(item);
+    // clear it from history state so a refresh/back doesn't re-add it
+    navigate(routerLocation.pathname, { replace: true, state: {} });
+  }, [routerLocation.state]);
+
   const style = TYPE_STYLE[vendor?.businessType?.toLowerCase()] || { emoji: '🏪', a: '#10B981', b: '#34D399' };
 
   const destAddress = usingCurrentLocation && currentPosition
@@ -304,12 +317,16 @@ Any special instructions`;
   }
 
   function handleProductTap(product) {
-    if (productHasOptions(product)) {
-      setActiveProduct(product);
-    } else {
-      addProductQuick(product);
-    }
+  if (isElectronics) {
+    navigate(`/product/${product.id}`);
+    return;
   }
+  if (productHasOptions(product)) {
+    setActiveProduct(product);
+  } else {
+    addProductQuick(product);
+  }
+}
 
   function useCurrentLocation() {
     if (!('geolocation' in navigator)) {
@@ -501,8 +518,17 @@ Any special instructions`;
         )}
 
         {!loading && products.length > 0 && (
-          <div className="vp-product-list" style={{ marginBottom: 8 }}>
-            {products.map((p) => (
+        <div className={isElectronics ? 'vp-product-grid' : 'vp-product-list'} style={{ marginBottom: 8 }}>
+          {products.map((p) => (
+            isElectronics ? (
+              <ElectronicsProductCard
+                key={p.id}
+                id={`product-row-${p.id}`}
+                highlighted={highlightedProductId === p.id}
+                product={p}
+                onClick={() => handleProductTap(p)}
+              />
+            ) : (
               <ProductCard
                 key={p.id}
                 id={`product-row-${p.id}`}
@@ -512,9 +538,10 @@ Any special instructions`;
                 theme={theme}
                 onClick={() => handleProductTap(p)}
               />
-            ))}
-          </div>
-        )}
+            )
+          ))}
+        </div>
+      )}
 
         {/* ── ORDER SUMMARY (structured, human-readable) ── */}
         {pickedItems.length > 0 && (
@@ -570,7 +597,22 @@ Any special instructions`;
           </div>
         )}
 
-        {/* ── ORDER NOTE ── */}
+    {isElectronics ? (
+        <div style={{
+          margin: '28px 0', padding: '16px 18px', borderRadius: 14,
+          background: '#EEF2FF', border: '1px solid #E0E7FF',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#0f1117', marginBottom: 4 }}>
+            Browsing {vendor?.businessName}'s catalogue
+          </div>
+          <div style={{ fontSize: 12.5, color: '#4B5563', lineHeight: 1.5 }}>
+            Tap any item to see photos, specs, and reviews, then call or WhatsApp
+            the seller directly — orders for electronics aren't placed through
+            this app.
+          </div>
+        </div>
+      ) : (
+        <>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f1117', margin: '28px 0 10px' }}>
           {pickedItems.length > 0 ? 'Anything else?' : 'What would you like to order?'}
         </h2>
@@ -635,6 +677,9 @@ Any special instructions`;
               )}
               <input ref={orderImageInputRef} type="file" accept="image/*" onChange={handleOrderImageSelect} style={{ display: 'none' }} />
             </div>
+
+            </>
+            )}  
 
             {/* ── DELIVERY LOCATION (compulsory) ── */}
             <Field label="DELIVER TO" icon={<MapPin size={15} color="#ef4444" />}>
@@ -921,6 +966,44 @@ Any special instructions`;
           flex-direction: column;
           gap: 8px;
         }
+
+        .vp-product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          @media (min-width: 480px) {
+            .vp-product-grid { grid-template-columns: repeat(3, 1fr); }
+          }
+          .vp-epc {
+            display: flex; flex-direction: column; text-align: left;
+            background: #fff; border: 1px solid #f0f0f0; border-radius: 16px;
+            padding: 0; overflow: hidden; cursor: pointer; font-family: inherit;
+            transition: transform 0.1s ease, border-color 0.12s ease;
+          }
+          .vp-epc:active { transform: scale(0.98); }
+          .vp-epc--highlight {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.22);
+          }
+          .vp-epc__thumb {
+            position: relative; width: 100%; aspect-ratio: 1 / 1;
+            background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center;
+          }
+          .vp-epc__count {
+            position: absolute; bottom: 6px; right: 6px; font-size: 10px; font-weight: 800;
+            color: #fff; background: rgba(15,17,23,0.65); padding: 2px 6px; border-radius: 50px;
+          }
+          .vp-epc__body { padding: 10px 12px 12px; }
+          .vp-epc__brand { font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+          .vp-epc__name {
+            font-size: 12.5px; font-weight: 700; color: #0f1117; line-height: 1.3;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            min-height: 2.6em;
+          }
+          .vp-epc__price { font-size: 12px; font-weight: 800; color: #10b981; margin-top: 4px; }
+
         .vp-product-row {
           display: flex;
           align-items: center;
@@ -1760,6 +1843,29 @@ function ProductCard({ id, highlighted, product, hasOptions, theme, onClick }) {
           : <Plus size={17} color={actionColor} strokeWidth={2.75} />}
       </div>
     </div>
+  );
+}
+
+function ElectronicsProductCard({ id, highlighted, product, onClick }) {
+  const hasPhoto = !!product.images?.[0];
+  const photoCount = product.images?.length || 0;
+  return (
+    <button type="button" id={id} onClick={onClick} className={`vp-epc${highlighted ? ' vp-epc--highlight' : ''}`}>
+      <div
+        className="vp-epc__thumb"
+        style={hasPhoto
+          ? { backgroundImage: `url(${product.images[0]})` }
+          : { background: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)' }}
+      >
+        {!hasPhoto && <span style={{ fontSize: 30 }}>📱</span>}
+        {photoCount > 1 && <span className="vp-epc__count">+{photoCount - 1}</span>}
+      </div>
+      <div className="vp-epc__body">
+        {product.brand && <div className="vp-epc__brand">{product.brand}</div>}
+        <div className="vp-epc__name">{product.name}</div>
+        <div className="vp-epc__price">From {`GHS ${Number(product.price || 0).toFixed(2)}`}</div>
+      </div>
+    </button>
   );
 }
 

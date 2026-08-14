@@ -32,6 +32,7 @@ import InstallPrompt from './components/InstallPrompt'
 import { useNotifications } from './providers/useNotifications'
 import ProfileEditPage from './pages/customer/Profile/ProfileEditingPage'
 import ForgotPassword from './pages/ForgotPassword'
+import ProductDetailPage from './pages/public/ProductDetailPage'
 
 export default function App() {
   const { toast, dismissToast, openToast } = useNotifications();
@@ -119,6 +120,11 @@ export default function App() {
               <Route path="/deliveries/:id" element={
                 <ProtectedRoute roles={['CUSTOMER']}><DeliveryTrackingPage /></ProtectedRoute>
               } />
+
+              <Route path="/product/:productId" element={
+                <ProtectedRoute roles={['CUSTOMER']}><ProductDetailPage /></ProtectedRoute>
+              } />
+
               <Route path="/notifications" element={
                 <ProtectedRoute roles={['CUSTOMER']}><NotificationsPage /></ProtectedRoute>
               } />
