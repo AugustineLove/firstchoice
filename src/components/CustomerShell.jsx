@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 const TABS = [
   { path: '/home',       label: 'Home',    icon: Home },
   { path: '/orders',     label: 'Orders',  icon: ShoppingBag },
-  { path: '/deliveries', label: 'Pick Up', icon: Bike },
+  { path: '/deliveries', label: 'Pick Up/Errands', icon: Bike },
   { path: '/profile',    label: 'Profile', icon: User },
 ];
 

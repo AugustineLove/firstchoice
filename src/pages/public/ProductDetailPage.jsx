@@ -415,8 +415,14 @@ export default function ProductDetailPage() {
         }
         .pdp-gallery__scroller::-webkit-scrollbar { display: none; }
         .pdp-gallery__slide {
-          flex: 0 0 100%; height: 100%; background-size: cover; background-position: center; scroll-snap-align: start;
-        }
+            flex: 0 0 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            scroll-snap-align: start;
+            background-color: #fff;
+            }
         .pdp-gallery__placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         .pdp-gallery__dots {
           position: absolute; bottom: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 2;
