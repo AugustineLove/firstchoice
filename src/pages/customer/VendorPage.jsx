@@ -1863,7 +1863,7 @@ function ElectronicsProductCard({ id, highlighted, product, onClick }) {
       <div className="vp-epc__body">
         {product.brand && <div className="vp-epc__brand">{product.brand}</div>}
         <div className="vp-epc__name">{product.name}</div>
-        <div className="vp-epc__price">From {`GHS ${Number(product.price || 0).toFixed(2)}`}</div>
+        {/* <div className="vp-epc__price">From {`GHS ${Number(product.price || 0).toFixed(2)}`}</div> */}
       </div>
     </button>
   );
