@@ -607,7 +607,7 @@ Any special instructions`;
           </div>
           <div style={{ fontSize: 12.5, color: '#4B5563', lineHeight: 1.5 }}>
             Tap any item to see photos, specs, and reviews, then call or WhatsApp
-            the seller directly — orders for electronics aren't placed through
+            the seller directly. Orders for electronics aren't placed through
             this app.
           </div>
         </div>
