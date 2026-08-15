@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
 import { BroadcastSection } from '../../components/admin/NavComponents';
+import { OperatingHoursCard } from '../../components/admin/OperatingHours';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -1136,13 +1137,8 @@ function SettingsSection({ authFetch, theme }) {
           {saving ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving...</> : 'Save Settings'}
         </button>
       </div>
-
-      <div style={{ background:'#fff', borderRadius:14, border:'1px dashed #e5e7eb', padding:'22px 24px', maxWidth:640 }}>
-        <h3 style={{ fontSize:15, fontWeight:800, color:'#9ca3af', margin:'0 0 4px' }}>More settings — coming soon</h3>
-        <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>
-          This is where future platform settings (delivery pricing tiers, payout schedules, notification templates, etc.) will live.
-        </p>
-      </div>
+        <OperatingHoursCard authFetch={authFetch} theme={theme}/>
+      
     </div>
   );
 }
