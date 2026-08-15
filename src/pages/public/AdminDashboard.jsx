@@ -8,11 +8,12 @@ import {
   TrendingUp, Package, Loader2, Search, Filter, Eye,
   UserCheck, UserX, ChevronLeft, ChevronRight, Plus, Settings,
   ImagePlus, Trash2,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
-
+import { BroadcastSection } from '../../components/admin/NavComponents';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -132,7 +133,7 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 /* Small labeled text input, reused across the vendor form modal */
-function FormField({ label, children }) {
+export function FormField({ label, children }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>{label}</div>
@@ -141,7 +142,7 @@ function FormField({ label, children }) {
   );
 }
 
-const fieldStyle = {
+export const fieldStyle = {
   width: '100%', height: 40, border: '1.5px solid #e5e7eb', borderRadius: 8,
   padding: '0 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
 };
@@ -1175,6 +1176,7 @@ const NAV_ITEMS = [
   { id:'riders',      label:'Riders',      icon:<Bike size={18}/> },
   { id:'users',       label:'Users',       icon:<Users size={18}/> },
   { id:'settings', label:'Settings', icon:<Settings size={18}/> },
+  { id:'broadcast', label:'Broadcast', icon:<Megaphone size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -1208,6 +1210,7 @@ export default function AdminDashboard() {
     orders:     <OrdersSection authFetch={authFetch} theme={theme}/>,
     deliveries: <DeliveriesSection authFetch={authFetch} theme={theme}/>,
     settings: <SettingsSection authFetch={authFetch} theme={theme}/>,
+    broadcast: <BroadcastSection authFetch={authFetch} theme={theme}/>,
   };
 
   return (
