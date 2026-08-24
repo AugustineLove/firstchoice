@@ -15,10 +15,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
 import { BroadcastSection } from '../../components/admin/NavComponents';
 import { OperatingHoursCard } from '../../components/admin/OperatingHours';
+import RiderInsights from '../../components/RiderInsights';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
-function Badge({ text, color, bg }) {
+export function Badge({ text, color, bg }) {
   return (
     <span style={{
       fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:50,
@@ -27,7 +28,7 @@ function Badge({ text, color, bg }) {
   );
 }
 
-const STATUS_STYLES = {
+export const STATUS_STYLES = {
   ACTIVE:          { color:'#065f46', bg:'#d1fae5' },
   PENDING:         { color:'#92400e', bg:'#fef3c7' },
   SUSPENDED:       { color:'#991b1b', bg:'#fee2e2' },
@@ -51,12 +52,12 @@ const STATUS_STYLES = {
 ERRAND: { color:'#7c3aed', bg:'#ede9fe' },
 };
 
-function StatusBadge({ status }) {
+export function StatusBadge({ status }) {
   const s = STATUS_STYLES[status] || { color:'#374151', bg:'#f3f4f6' };
   return <Badge text={status?.replace(/_/g,' ')} color={s.color} bg={s.bg} />;
 }
 
-function StatCard({ icon, label, value, sub, color, loading }) {
+export function StatCard({ icon, label, value, sub, color, loading }) {
   return (
     <div style={{
       background:'#fff', borderRadius:14, padding:'22px 24px',
@@ -77,7 +78,7 @@ function StatCard({ icon, label, value, sub, color, loading }) {
   );
 }
 
-function Table({ columns, data, loading, emptyMsg = 'No records found' }) {
+export function Table({ columns, data, loading, emptyMsg = 'No records found' }) {
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:60, color:'#9ca3af', gap:10 }}>
       <Loader2 size={20} style={{ animation:'spin 1s linear infinite' }}/> Loading...
@@ -116,7 +117,7 @@ function Table({ columns, data, loading, emptyMsg = 'No records found' }) {
   );
 }
 
-function Pagination({ page, totalPages, onChange }) {
+export function Pagination({ page, totalPages, onChange }) {
   if (totalPages <= 1) return null;
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'16px 0' }}>
@@ -807,6 +808,7 @@ function RidersSection({ authFetch, theme }) {
   const [page,    setPage]    = useState(1);
   const [total,   setTotal]   = useState(0);
   const [avail,   setAvail]   = useState('');
+  const [viewRiderId, setViewRiderId] = useState(null);
 
   const load = useCallback(async (p=1, a=avail) => {
     setLoading(true);
@@ -829,7 +831,18 @@ function RidersSection({ authFetch, theme }) {
     { key:'rating',          label:'Rating',      render: r => <span style={{ fontWeight:700 }}>⭐ {r.rating?.toFixed(1) || '0.0'}</span> },
     { key:'earnings',        label:'Earnings',    render: r => <span style={{ fontWeight:700, color:'#10b981' }}>GHS {r.earnings?.toFixed(2) || '0.00'}</span> },
     { key:'location',        label:'Location',    render: r => r.currentLatitude ? <span style={{ fontSize:12, color:'#3b82f6' }}>📍 {r.currentLatitude.toFixed(3)}, {r.currentLongitude.toFixed(3)}</span> : <span style={{ color:'#9ca3af', fontSize:12 }}>No location</span> },
+    { key:'actions', label:'', render: r => (
+      <button onClick={() => setViewRiderId(r.id)}
+        style={{ padding:'5px 10px', borderRadius:7, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:4 }}>
+        <Eye size={11}/> Insights
+      </button>
+    )},
   ];
+
+  // ── Early return: drill into the detail view, don't render the list ──
+  if (viewRiderId) {
+    return <RiderInsights riderId={viewRiderId} authFetch={authFetch} theme={theme} onBack={() => setViewRiderId(null)} />;
+  }
 
   return (
     <div>
