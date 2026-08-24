@@ -537,81 +537,190 @@ function VendorFormModal({ vendor, onClose, onSaved, authFetch, theme }) {
 ═══════════════════════════════════════════════ */
 
 /* ── OVERVIEW ── */
-function Overview({ authFetch }) {
-  const [stats,   setStats]   = useState(null);
+function Overview({ authFetch, theme }) {
+  const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [sRes, oRes, rRes] = await Promise.all([
-        authFetch('/admin/stats'),
-        authFetch('/admin/analytics/orders'),
-        authFetch('/admin/analytics/riders'),
-      ]);
-      const [s, o, r] = await Promise.all([sRes.json(), oRes.json(), rRes.json()]);
-      setStats({ summary: s.data, orders: o.data, riders: r.data });
-    } catch {}
+      const res = await authFetch('/admin/overview');
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Could not load overview');
+      setData(json.data);
+    } catch (e) {
+      setError(e.message || 'Something went wrong.');
+    }
     setLoading(false);
   }, [authFetch]);
 
   useEffect(() => { load(); }, [load]);
 
-  const s = stats?.summary;
+  if (loading && !data) return (
+    <div style={{ display:'flex', justifyContent:'center', padding:80 }}>
+      <Loader2 size={28} style={{ animation:'spin 1s linear infinite', color: theme.green }}/>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ background:'#fef2f2', color:'#dc2626', borderRadius:10, padding:'16px 20px' }}>{error}</div>
+  );
+
+  const { kpis, dailyTrend, userGrowth, orderStatusBreakdown, deliveryStatusBreakdown, orderTypeBreakdown, paymentMethodBreakdown, topVendors, topRiders } = data;
 
   return (
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
         <div>
           <h2 style={{ fontSize:22, fontWeight:900, color:'#0f1117', margin:0 }}>Dashboard Overview</h2>
-          <p style={{ color:'#6b7280', fontSize:14, margin:'4px 0 0' }}>Real-time platform metrics</p>
+          <p style={{ color:'#6b7280', fontSize:14, margin:'4px 0 0' }}>Real-time platform metrics — last 30 days</p>
         </div>
         <button onClick={load} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:13, fontWeight:600, color:'#374151' }}>
-          <RefreshCw size={14}/> Refresh
+          <RefreshCw size={14} className={loading ? 'spin' : ''}/> Refresh
         </button>
       </div>
 
-      {/* STAT GRID */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:16, marginBottom:28 }}>
-        <StatCard loading={loading} icon={<Users size={20}/>}       label="Total Users"      value={s?.users?.total}              color="#3b82f6"/>
-        <StatCard loading={loading} icon={<Bike size={20}/>}        label="Active Riders"    value={`${s?.riders?.active??0}/${s?.riders?.total??0}`} color="#f59e0b" sub="Online / Total"/>
-        <StatCard loading={loading} icon={<Store size={20}/>}       label="Vendors"          value={s?.vendors?.total}            color="#10b981"/>
-        <StatCard loading={loading} icon={<ShoppingBag size={20}/>} label="Orders Today"     value={s?.orders?.today}             color="#8b5cf6" sub={`${s?.orders?.pending??0} pending`}/>
-        <StatCard loading={loading} icon={<Truck size={20}/>}       label="Deliveries Today" value={s?.deliveries?.today}         color="#06b6d4"/>
-        <StatCard loading={loading} icon={<TrendingUp size={20}/>}  label="Revenue Today"    value={s?.revenue?.today ? `GHS ${s.revenue.today.toFixed(2)}` : 'GHS 0'} color="#ec4899"/>
+      {/* KPI GRID */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))', gap:16, marginBottom:22 }}>
+        <StatCard icon={<Users size={20}/>}       label="Total Users"      value={kpis.totalUsers}  sub={`${kpis.usersByRole.CUSTOMER||0} customers`} color="#3b82f6"/>
+        <StatCard icon={<Bike size={20}/>}        label="Riders Online"    value={`${kpis.onlineRiders}/${kpis.totalRiders}`} sub="Online / Total" color="#f59e0b"/>
+        <StatCard icon={<Store size={20}/>}       label="Vendors"          value={kpis.totalVendors} sub={`${kpis.pendingVendors} pending approval`} color="#10b981"/>
+        <StatCard icon={<ShoppingBag size={20}/>} label="Orders Today"     value={kpis.ordersToday} color="#8b5cf6"/>
+        <StatCard icon={<Truck size={20}/>}       label="Deliveries Today" value={kpis.deliveriesToday} color="#06b6d4"/>
+        <StatCard icon={<TrendingUp size={20}/>}  label="Revenue Today"    value={`GHS ${kpis.revenueToday.toFixed(2)}`} color="#ec4899"/>
+        <StatCard icon={<DollarSign size={20}/>}  label="All-Time Revenue" value={`GHS ${kpis.totalRevenueAllTime.toFixed(0)}`} color="#0ea5e9"/>
+        <StatCard icon={<AlertTriangle size={20}/>} label="Cancellation Rate" value={`${kpis.cancellationRate}%`} sub="Last 30 days" color="#ef4444"/>
       </div>
 
-      {/* ORDER STATUS BREAKDOWN */}
-      {stats?.orders?.byStatus && (
-        <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', padding:'20px 24px', marginBottom:20 }}>
-          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f1117', margin:'0 0 16px' }}>Orders by Status</h3>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
-            {stats.orders.byStatus.map(b => (
-              <div key={b.orderStatus} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:8, background:'#f9fafb', border:'1px solid #f0f0f0' }}>
-                <StatusBadge status={b.orderStatus}/>
-                <span style={{ fontWeight:800, color:'#0f1117' }}>{b._count.id}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* REVENUE TREND */}
+      <SectionCard title="Revenue & Volume — last 30 days" sub="Marketplace orders vs. deliveries/errands" style={{ marginBottom:16 }}>
+        <ResponsiveContainer width="100%" height={280}>
+          <AreaChart data={dailyTrend}>
+            <defs>
+              <linearGradient id="ordRevGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={theme.green} stopOpacity={0.35}/>
+                <stop offset="95%" stopColor={theme.green} stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="delRevGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6"/>
+            <XAxis dataKey="date" tick={{ fontSize:10 }} tickFormatter={d => d.slice(5)} interval={4}/>
+            <YAxis tick={{ fontSize:11 }}/>
+            <Tooltip content={<ChartTooltip/>}/>
+            <Legend wrapperStyle={{ fontSize:12 }}/>
+            <Area type="monotone" dataKey="orderRevenue" name="Order Revenue" stroke={theme.green} fill="url(#ordRevGrad)" strokeWidth={2}/>
+            <Area type="monotone" dataKey="deliveryRevenue" name="Delivery Revenue" stroke="#3b82f6" fill="url(#delRevGrad)" strokeWidth={2}/>
+          </AreaChart>
+        </ResponsiveContainer>
+      </SectionCard>
 
-      {/* TOP VENDORS */}
-      {stats?.orders?.topVendors?.length > 0 && (
-        <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', padding:'20px 24px' }}>
-          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f1117', margin:'0 0 16px' }}>Top Vendors</h3>
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            {stats.orders.topVendors.map((v,i) => (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:8, background:'#f9fafb' }}>
-                <span style={{ width:28, height:28, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#374151' }}>{i+1}</span>
-                <span style={{ fontWeight:700, color:'#0f1117', flex:1 }}>{v.vendor?.businessName || 'Unknown'}</span>
-                <span style={{ fontSize:13, color:'#6b7280' }}>{v._count.id} orders</span>
-                <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>GHS {(v._sum.totalAmount||0).toFixed(0)}</span>
+      {/* USER GROWTH + ORDER TYPE MIX */}
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:16, marginBottom:16 }}>
+        <SectionCard title="User Growth" sub="New signups by role, last 30 days">
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={userGrowth}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6"/>
+              <XAxis dataKey="date" tick={{ fontSize:10 }} tickFormatter={d => d.slice(5)} interval={4}/>
+              <YAxis tick={{ fontSize:11 }} allowDecimals={false}/>
+              <Tooltip content={<ChartTooltip prefix=""/>}/>
+              <Legend wrapperStyle={{ fontSize:12 }}/>
+              <Line type="monotone" dataKey="customers" name="Customers" stroke="#3b82f6" strokeWidth={2} dot={false}/>
+              <Line type="monotone" dataKey="vendors" name="Vendors" stroke="#10b981" strokeWidth={2} dot={false}/>
+              <Line type="monotone" dataKey="riders" name="Riders" stroke="#f59e0b" strokeWidth={2} dot={false}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </SectionCard>
+
+        <SectionCard title="Job Mix" sub="Last 30 days, by type">
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={orderTypeBreakdown} dataKey="count" nameKey="type" cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3}>
+                {orderTypeBreakdown.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}/>)}
+              </Pie>
+              <Tooltip/>
+              <Legend wrapperStyle={{ fontSize:11 }} layout="vertical" align="center" verticalAlign="bottom"/>
+            </PieChart>
+          </ResponsiveContainer>
+        </SectionCard>
+      </div>
+
+      {/* STATUS BREAKDOWNS + PAYMENT METHOD */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16 }}>
+        <SectionCard title="Orders by Status">
+          <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+            {orderStatusBreakdown.map(b => (
+              <div key={b.status} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:8, background:'#f9fafb', border:'1px solid #f0f0f0' }}>
+                <StatusBadge status={b.status}/>
+                <span style={{ fontWeight:800, color:'#0f1117' }}>{b.count}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        </SectionCard>
+
+        <SectionCard title="Deliveries by Status">
+          <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+            {deliveryStatusBreakdown.map(b => (
+              <div key={b.status} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:8, background:'#f9fafb', border:'1px solid #f0f0f0' }}>
+                <StatusBadge status={b.status}/>
+                <span style={{ fontWeight:800, color:'#0f1117' }}>{b.count}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Payment Methods">
+          <ResponsiveContainer width="100%" height={140}>
+            <PieChart>
+              <Pie data={paymentMethodBreakdown} dataKey="count" nameKey="method" cx="50%" cy="50%" innerRadius={30} outerRadius={60} paddingAngle={3}>
+                {paymentMethodBreakdown.map((_, i) => <Cell key={i} fill={i === 0 ? theme.green : '#f59e0b'}/>)}
+              </Pie>
+              <Tooltip/>
+              <Legend wrapperStyle={{ fontSize:11 }}/>
+            </PieChart>
+          </ResponsiveContainer>
+        </SectionCard>
+      </div>
+
+      {/* LEADERBOARDS */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <SectionCard title="Top Vendors" sub="By revenue, all-time">
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {topVendors.length === 0 && <div style={{ color:'#9ca3af', fontSize:13 }}>No orders yet</div>}
+            {topVendors.map((v, i) => (
+              <div key={v.vendorId} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:8, background:'#f9fafb' }}>
+                <span style={{ width:28, height:28, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#374151', flexShrink:0 }}>{i+1}</span>
+                <span style={{ fontWeight:700, color:'#0f1117', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{v.businessName}</span>
+                <span style={{ fontSize:13, color:'#6b7280' }}>{v.orderCount} orders</span>
+                <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>GHS {v.revenue.toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Top Riders" sub="By earnings, all-time">
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {topRiders.length === 0 && <div style={{ color:'#9ca3af', fontSize:13 }}>No riders yet</div>}
+            {topRiders.map((r, i) => (
+              <div key={r.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:8, background:'#f9fafb' }}>
+                <span style={{ width:28, height:28, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#374151', flexShrink:0 }}>{i+1}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:700, color:'#0f1117', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.name}</div>
+                  <div style={{ fontSize:11, color:'#9ca3af' }}>⭐ {r.rating?.toFixed(1) || '0.0'} · {r.totalDeliveries} deliveries</div>
+                </div>
+                <StatusBadge status={r.availability}/>
+                <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>GHS {r.earnings.toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+
+      <style>{`.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
