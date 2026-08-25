@@ -11,9 +11,9 @@ import {
 import { Table, StatusBadge, StatCard, Pagination } from '../pages/public/AdminDashboard';
 // ^ adjust the import path/filename to wherever you exported those primitives from
 
-const PIE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
+export const PIE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
 
-function SectionCard({ title, sub, children, style }) {
+export function SectionCard({ title, sub, children, style }) {
   return (
     <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', padding:'20px 22px', ...style }}>
       <div style={{ marginBottom:16 }}>
@@ -25,7 +25,7 @@ function SectionCard({ title, sub, children, style }) {
   );
 }
 
-function ChartTooltip({ active, payload, label, prefix = 'GHS ' }) {
+export function ChartTooltip({ active, payload, label, prefix = 'GHS ' }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'#0f1117', color:'#fff', borderRadius:8, padding:'8px 12px', fontSize:12 }}>

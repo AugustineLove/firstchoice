@@ -9,13 +9,21 @@ import {
   UserCheck, UserX, ChevronLeft, ChevronRight, Plus, Settings,
   ImagePlus, Trash2,
   Megaphone,
+  DollarSign,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
 import { BroadcastSection } from '../../components/admin/NavComponents';
 import { OperatingHoursCard } from '../../components/admin/OperatingHours';
-import RiderInsights from '../../components/RiderInsights';
+import RiderInsights, { ChartTooltip, PIE_COLORS, SectionCard } from '../../components/RiderInsights';
+import {
+  AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  LineChart,
+  Line,
+} from 'recharts';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -710,10 +718,10 @@ function Overview({ authFetch, theme }) {
                 <span style={{ width:28, height:28, borderRadius:'50%', background:'#e5e7eb', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#374151', flexShrink:0 }}>{i+1}</span>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontWeight:700, color:'#0f1117', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.name}</div>
-                  <div style={{ fontSize:11, color:'#9ca3af' }}>⭐ {r.rating?.toFixed(1) || '0.0'} · {r.totalDeliveries} deliveries</div>
+                  <div style={{ fontSize:11, color:'#9ca3af' }}>⭐ {r.rating?.toFixed(1) || '0.0'} · {r.totalJobs} jobs ({r.completedJobs} completed)</div>
                 </div>
                 <StatusBadge status={r.availability}/>
-                <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>GHS {r.earnings.toFixed(0)}</span>
+                <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>GHS {r.totalEarnings.toFixed(0)}</span>
               </div>
             ))}
           </div>
@@ -1321,7 +1329,7 @@ export default function AdminDashboard() {
   if (!user) return null;
 
   const SECTIONS = {
-    overview:   <Overview    authFetch={authFetch} theme={theme}/>,
+    overview: <Overview authFetch={authFetch} theme={theme}/>,
     users:      <UsersSection authFetch={authFetch} theme={theme}/>,
     vendors:    <VendorsSection authFetch={authFetch} theme={theme}/>,
     riders:     <RidersSection authFetch={authFetch} theme={theme}/>,
