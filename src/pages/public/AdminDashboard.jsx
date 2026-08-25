@@ -28,6 +28,7 @@ import { ReportsSection } from '../../components/admin/ReportsSection';
 import { OrdersSection } from '../../components/admin/OrdersSection';
 import { DeliveriesSection } from '../../components/admin/DeliveriesSection';
 import { SettingsSection } from '../../components/admin/SettingsSection';
+import { VendorFormModal } from '../../components/admin/VendorFormModal';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -161,8 +162,8 @@ export const fieldStyle = {
   padding: '0 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
 };
 
-const BUSINESS_TYPES = ['Food', 'Grocery', 'Pharmacy', 'Boutique', 'Electronics', 'Drinks', 'Other'];
-const PRODUCT_CATEGORY_EMOJI = { Food:'🍛', Grocery:'🛒', Pharmacy:'💊', Boutique:'👗', Electronics:'📱', Drinks:'🥤', Other:'📦' };
+export const BUSINESS_TYPES = ['Food', 'Grocery', 'Pharmacy', 'Boutique', 'Electronics', 'Drinks', 'Other'];
+export const PRODUCT_CATEGORY_EMOJI = { Food:'🍛', Grocery:'🛒', Pharmacy:'💊', Boutique:'👗', Electronics:'📱', Drinks:'🥤', Other:'📦' };
 
 /* ═══════════════════════════════════════════════
    VENDOR FORM MODAL — create a vendor / edit its
