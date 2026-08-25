@@ -11,6 +11,7 @@ import {
   Megaphone,
   DollarSign,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react';
 import {
   AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
@@ -19,6 +20,7 @@ import {
   Line,
 } from 'recharts';
 import { BUSINESS_TYPES, fieldStyle, fmtGHS, FormField, PRODUCT_CATEGORY_EMOJI, StatCard, Table } from '../../pages/public/AdminDashboard';
+import { AdminProductModal } from './VendorManageModal'; // export this component (see note below)
 
 
 
@@ -57,6 +59,7 @@ export function VendorFormModal({ vendor, onClose, onSaved, authFetch, theme }) 
   const [pSaving, setPSaving] = useState(false);
   const [pError, setPError]   = useState(null);
   const [createdCreds, setCreatedCreds] = useState(null);
+ const [editingProduct, setEditingProduct] = useState(null); 
 
   const isEdit = !!vendor;
 
@@ -168,7 +171,7 @@ export function VendorFormModal({ vendor, onClose, onSaved, authFetch, theme }) 
 
   async function deleteProduct(productId) {
   try {
-    await authFetch(`/admin/products/${productId}`, { method: 'DELETE' }); // was /products/${productId}
+    await authFetch(`/admin/products/${productId}`, { method: 'DELETE' });
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   } catch {}
 }
@@ -377,6 +380,9 @@ export function VendorFormModal({ vendor, onClose, onSaved, authFetch, theme }) 
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1117', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                         <div style={{ fontSize: 12, color: '#9ca3af' }}>GHS {Number(p.price ?? 0).toFixed(2)} · {p.stock ?? 0} in stock</div>
                       </div>
+                       <button onClick={() => setEditingProduct(p)} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex' }}>
+                        <Pencil size={13} color="#374151" />
+                      </button>
                       <button onClick={() => deleteProduct(p.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex' }}>
                         <Trash2 size={13} color="#dc2626" />
                       </button>
@@ -388,6 +394,17 @@ export function VendorFormModal({ vendor, onClose, onSaved, authFetch, theme }) 
           )}
         </div>
       </div>
+       {editingProduct && (
+        <AdminProductModal
+          open={true}
+          onClose={() => setEditingProduct(null)}
+          editing={editingProduct}
+          vendorId={savedVendor.id}
+          authFetch={authFetch}
+          theme={theme}
+          onSave={loadProducts}
+        />
+      )}
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
