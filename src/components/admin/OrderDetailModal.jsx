@@ -238,21 +238,7 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
                 deliveryAddress={order.deliveryAddress || order.destinationAddress}
               />
 
-              <InfoCard title="Vendor" icon={<Store size={14} />}>
-                <PersonRow name={order.vendor?.businessName} phone={order.vendor?.phone} />
-              </InfoCard>
-
-              <InfoCard title="Customer" icon={<User size={14} />}>
-                <PersonRow name={order.customer?.name} phone={order.customer?.phone} />
-              </InfoCard>
-
-              {recipientDiffersFromCustomer && (
-                <InfoCard title="Recipient (ordered for a friend)" icon={<User size={14} />}>
-                  <PersonRow name={order.recipientName} phone={order.recipientPhone} />
-                </InfoCard>
-              )}
-
-              {(order.items?.length > 0 || order.notes) && (
+               {(order.items?.length > 0 || order.notes) && (
                 <InfoCard title="Items" icon={<Package size={14} />}>
                   {order.items?.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -268,6 +254,21 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
                   )}
                 </InfoCard>
               )}
+
+              <InfoCard title="Vendor" icon={<Store size={14} />}>
+                <PersonRow name={order.vendor?.businessName} phone={order.vendor?.phone} />
+              </InfoCard>
+
+              <InfoCard title="Customer" icon={<User size={14} />}>
+                <PersonRow name={order.customer?.name} phone={order.customer?.phone} />
+              </InfoCard>
+
+              {recipientDiffersFromCustomer && (
+                <InfoCard title="Recipient (ordered for a friend)" icon={<User size={14} />}>
+                  <PersonRow name={order.recipientName} phone={order.recipientPhone} />
+                </InfoCard>
+              )}
+
               <InfoCard title="Rider" icon={<Bike size={14} />}>
                 {order.rider ? (
                   <PersonRow name={order.rider.user?.name} phone={order.rider.user?.phone} />
