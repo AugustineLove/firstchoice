@@ -171,7 +171,6 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
 
   const recipientDiffersFromCustomer = order?.recipientName && order.recipientName !== order?.customer?.name;
 
-  console.log(order);
   return (
     <div
       onClick={onClose}
