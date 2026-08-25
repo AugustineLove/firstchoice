@@ -171,6 +171,7 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
 
   const recipientDiffersFromCustomer = order?.recipientName && order.recipientName !== order?.customer?.name;
 
+  console.log(order);
   return (
     <div
       onClick={onClose}
@@ -252,7 +253,7 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
                 </InfoCard>
               )}
 
-              {(order.items?.length > 0 || order.orderNote) && (
+              {(order.items?.length > 0 || order.notes) && (
                 <InfoCard title="Items" icon={<Package size={14} />}>
                   {order.items?.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -264,11 +265,10 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
                       ))}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 13, color: '#374151' }}>{order.orderNote}</div>
+                    <div style={{ fontSize: 13, color: '#374151' }}>{order.notes}</div>
                   )}
                 </InfoCard>
               )}
-
               <InfoCard title="Rider" icon={<Bike size={14} />}>
                 {order.rider ? (
                   <PersonRow name={order.rider.user?.name} phone={order.rider.user?.phone} />
