@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { fieldStyle, fmtGHS, Pagination, StatCard, Table, StatusBadge, PRODUCT_CATEGORY_EMOJI } from '../../pages/public/AdminDashboard';
 import { VendorManageModal } from './VendorManageModal';
+import { VendorFormModal } from './VendorFormModal';
 
 export function VendorsSection({ authFetch, theme }) {
   const [data,    setData]    = useState([]);
