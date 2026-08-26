@@ -18,7 +18,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { fieldStyle, fmtGHS, Pagination, StatCard, Table } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, Pagination, StatCard, StatusBadge, Table } from '../../pages/public/AdminDashboard';
 
 
 export function DeliveriesSection({ authFetch, theme }) {
