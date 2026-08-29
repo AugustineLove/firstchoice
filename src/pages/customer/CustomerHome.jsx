@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ShoppingBag, Star, MapPin, Loader2, Store, Search, X, Flame, TrendingUp, Package, Truck, ArrowRight, Tag } from 'lucide-react';
+import { Bell, ShoppingBag, Star, MapPin, Loader2, Store, Search, X, Flame, TrendingUp, Package, Truck, ArrowRight, Tag, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useCart } from '../../context/CartContext';
@@ -236,380 +236,191 @@ export default function CustomerHome() {
   // actual resize — CSS handles this correctly on its own).
   const gridColsStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 };
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 88 }}>
-
-      {/* ── TOP BAR ── */}
-      <div className="fc-topbar">
-        <div className="fc-topbar__row">
-
-          <div className="fc-topbar__brand-row">
-            <div className="fc-topbar__brand">
-              <div className="fc-topbar__avatar">
-                <span className="fc-topbar__avatar-ring" aria-hidden="true" />
-                <img src="/icons/logo.png" alt="" className="fc-topbar__avatar-img" />
-              </div>
-
-              <div className="fc-topbar__wordmark">
-                <span className="fc-topbar__wordmark-text">
-                  First<span className="fc-topbar__wordmark-accent">Choice</span>
-                </span>
-                <span className="fc-topbar__wordmark-trail" aria-hidden="true">
-                  <span /><span /><span />
-                </span>
-              </div>
+return (
+  <div className="app-container">
+    {/* ─── TOPBAR ─── */}
+    <header className="topbar">
+      <div className="topbar__inner">
+        {/* Brand & Actions */}
+        <div className="topbar__row topbar__row--primary">
+          <div className="topbar__brand">
+            <div className="topbar__avatar">
+              <img src="/icons/logo.png" alt="FirstChoice" />
             </div>
+            <div className="topbar__wordmark">
+              <span>First<span className="topbar__accent">Choice</span></span>
+              <span className="topbar__dots" aria-hidden="true">
+                <span /><span /><span />
+              </span>
+            </div>
+          </div>
 
+          <button
+            type="button"
+            onClick={() => navigate('/notifications')}
+            className="topbar__notif"
+            aria-label="Notifications"
+          >
+            <Bell size={20} strokeWidth={2.2} />
+            <span className="topbar__notif-dot" />
+          </button>
+        </div>
+
+        {/* Greeting */}
+        <div className="topbar__greeting">
+          <h1>Yo, {firstName} <span aria-hidden="true">👋</span></h1>
+          <p>Make some taps, let's get it delivered.</p>
+        </div>
+
+        {/* Search */}
+        <div className="topbar__search">
+          <Search size={18} className="topbar__search-icon" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={openSearch}
+            placeholder="Search vendors, products, or extras..."
+            className="topbar__search-input"
+          />
+          {query && (
             <button
-              type="button"
-              onClick={() => navigate('/notifications')}
-              className="fc-topbar__notif"
-              aria-label="Notifications"
+              onClick={() => setQuery('')}
+              className="topbar__search-clear"
+              aria-label="Clear search"
             >
-              <Bell size={20} color="#fff" strokeWidth={2.25} />
+              <X size={18} />
             </button>
-          </div>
+          )}
+        </div>
 
-          <div className="fc-topbar__hero">
-            <div className="fc-topbar__greeting">
-              Yo, {firstName} <span aria-hidden="true">👋</span>
+        {/* Service Area */}
+        <div className="topbar__service">
+          <div className="service-card">
+            <div className="service-card__pin">
+              <MapPin size={36} strokeWidth={2.4} />
+              <div className="service-card__pin-shadow" />
             </div>
-            <div className="fc-topbar__subtitle">Make some taps, let's get it delivered!</div>
+            <div className="service-card__text">
+              <span className="service-card__label">Proudly serving</span>
+              <strong className="service-card__location">Agona Nkwanta</strong>
+              <span className="service-card__sub">and beyond.</span>
+            </div>
           </div>
         </div>
-
-        <div className="fc-topbar__search-wrap">
-          <div className="fc-topbar__search">
-            <Search size={17} color="#9ca3af" style={{ position: 'absolute', left: 14, top: 14 }} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={openSearch}
-              placeholder="Search vendors, products, or extras..."
-              className="fc-topbar__search-input"
-            />
-            {query && (
-              <button
-                onClick={() => { setQuery(''); setSearchOpen(false); }}
-                className="fc-topbar__search-clear"
-                aria-label="Clear search"
-              >
-                <X size={18} color="#9ca3af" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Fraunces:ital,wght@1,500;1,600&display=swap');
-
-          .fc-topbar {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            background:
-              radial-gradient(circle, rgba(255,255,255,0.14) 1.5px, transparent 1.5px) 0 0 / 22px 22px,
-              linear-gradient(135deg, #1B5E3B 0%, #0f3d26 100%);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-          }
-
-          .fc-topbar__row {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 20px) 10px;
-          }
-
-          .fc-topbar__brand-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-          }
-
-          .fc-topbar__brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-          }
-
-          .fc-topbar__avatar {
-            position: relative;
-            flex-shrink: 0;
-            width: clamp(34px, 7vw, 38px);
-            height: clamp(34px, 7vw, 38px);
-          }
-
-          .fc-topbar__avatar-ring {
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 1.5px solid rgba(255,255,255,0.5);
-            animation: fc-pulse-ring 2.4s ease-in-out infinite;
-          }
-
-          .fc-topbar__avatar-img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            display: block;
-            background: #fff;
-            border: 2px solid rgba(255,255,255,0.35);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          }
-
-          .fc-topbar__wordmark {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 0;
-          }
-
-          .fc-topbar__wordmark-text {
-            font-family: 'Space Grotesk', 'Poppins', system-ui, sans-serif;
-            font-weight: 700;
-            font-size: clamp(15px, 3.6vw, 18px);
-            letter-spacing: -0.4px;
-            color: #fff;
-            transform: skewX(-6deg);
-            display: inline-block;
-            white-space: nowrap;
-          }
-
-          .fc-topbar__wordmark-accent {
-            background: linear-gradient(90deg, #ffe3a3, #f6c453);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-          }
-
-          .fc-topbar__wordmark-trail {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-          }
-
-          .fc-topbar__wordmark-trail span {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #f6c453;
-            opacity: 0.55;
-            animation: fc-dot-shine 1.2s ease-in-out infinite;
-          }
-
-          .fc-topbar__wordmark-trail span:nth-child(1) { animation-delay: 0s; }
-          .fc-topbar__wordmark-trail span:nth-child(2) { animation-delay: 0.2s; }
-          .fc-topbar__wordmark-trail span:nth-child(3) { animation-delay: 0.4s; }
-
-          @keyframes fc-dot-shine {
-            0%, 100% { opacity: 0.55; box-shadow: 0 0 0 rgba(246, 196, 83, 0); }
-            50% { opacity: 1; box-shadow: 0 0 6px 1px rgba(246, 196, 83, 0.65); }
-          }
-
-          .fc-topbar__notif {
-            flex-shrink: 0;
-            width: clamp(36px, 8vw, 40px);
-            height: clamp(36px, 8vw, 40px);
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.25);
-            background: rgba(255,255,255,0.12);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.15s ease;
-          }
-          .fc-topbar__notif:hover { background: rgba(255,255,255,0.2); }
-          .fc-topbar__notif:active { transform: scale(0.94); }
-          .fc-topbar__notif:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-
-          .fc-topbar__hero {
-            margin-top: clamp(14px, 3.5vw, 20px);
-          }
-
-          .fc-topbar__greeting {
-            font-family: 'Fraunces', Georgia, serif;
-            font-style: italic;
-            font-weight: 600;
-            font-size: clamp(22px, 5.8vw, 28px);
-            color: #fff;
-            line-height: 1.15;
-            letter-spacing: -0.2px;
-          }
-
-          .fc-topbar__subtitle {
-            margin-top: 4px;
-            font-size: clamp(12.5px, 2.8vw, 14px);
-            color: #f6c453;
-            font-weight: 500;
-          }
-
-          .fc-topbar__search-wrap {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 14px clamp(16px, 4vw, 20px) 18px;
-          }
-
-          .fc-topbar__search { position: relative; }
-
-          .fc-topbar__search-input {
-            width: 100%;
-            height: 46px;
-            border-radius: 14px;
-            border: 1px solid transparent;
-            background: #fff;
-            padding-left: 40px;
-            padding-right: 14px;
-            font-family: inherit;
-            font-size: 14px;
-            box-sizing: border-box;
-            outline: none;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-            transition: box-shadow 0.2s ease, border-color 0.2s ease;
-          }
-          .fc-topbar__search-input:focus {
-            border-color: #1B5E3B;
-            box-shadow: 0 0 0 3px rgba(255,255,255,0.35), 0 4px 14px rgba(0,0,0,0.14);
-          }
-
-          .fc-topbar__search-clear {
-            position: absolute;
-            right: 10px;
-            top: 14px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: flex;
-          }
-
-          @keyframes fc-pulse-ring {
-            0%, 100% { opacity: 0.55; transform: scale(1); }
-            50% { opacity: 0; transform: scale(1.18); }
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .fc-topbar__avatar-ring { animation: none; }
-            .fc-topbar__wordmark-trail span { animation: none; opacity: 0.85; }
-          }
-        `}</style>
       </div>
+    </header>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px' }}>
-
-        {/* ── CATEGORIES ── */}
-        <h3 className="text-left" style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', color: '#000', margin: '24px 0 12px' }}>
-          SHOP BY CATEGORY
-        </h3>
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
+    {/* ─── MAIN CONTENT ─── */}
+    <main className="main-content">
+      {/* Categories */}
+      <section className="section">
+        <h2 className="section__title">Shop by Category</h2>
+        <div className="category-grid">
           {CATEGORIES.map((cat) => {
             const active = category === cat.value;
-            const bg = cat.bg ?? `${theme.green}18`;
-            const fg = cat.fg ?? theme.green;
             return (
               <button
                 key={cat.label}
                 onClick={() => setCategory(cat.value)}
-                className="flex flex-col items-center justify-center gap-1 transition-all"
+                className={`category-btn ${active ? 'category-btn--active' : ''}`}
                 style={{
-                  width: 84, height: 84, borderRadius: 20, flexShrink: 0, cursor: 'pointer',
-                  background: bg, border: active ? `2px solid ${fg}` : '2px solid transparent',
-                  boxShadow: active ? `0 6px 16px ${fg}33` : '0 1px 3px rgba(0,0,0,0.04)',
-                  transform: active ? 'scale(1.03)' : 'scale(1)', fontFamily: 'inherit',
+                  '--cat-bg': cat.bg ?? `${theme.green}18`,
+                  '--cat-fg': cat.fg ?? theme.green,
                 }}
               >
-                <span style={{ fontSize: 24 }}>{cat.icon}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, color: fg }}>{cat.label}</span>
+                <span className="category-btn__icon">{cat.icon}</span>
+                <span className="category-btn__label">{cat.label}</span>
               </button>
             );
           })}
         </div>
+      </section>
 
-        {/* ── RANDOM DELIVERY REQUEST ── */}
-        <div
-          className="rounded-3xl"
-          style={{
-            marginTop: 22, padding: 22, position: 'relative', overflow: 'hidden',
-            background: `linear-gradient(135deg, ${theme.green}, #0d9488)`, boxShadow: `0 12px 28px ${theme.green}40`,
-          }}
-        >
-          <Truck size={110} color="rgba(255,255,255,0.12)" style={{ position: 'absolute', right: -10, bottom: -18, transform: 'rotate(-8deg)' }} />
-          <h2 style={{ color: '#fff', fontSize: 17, fontWeight: 900, margin: 0, position: 'relative' }}>Need something picked up?</h2>
-          <p className='text-left' style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, margin: '8px 0 16px', maxWidth: 320, lineHeight: 1.5, position: 'relative' }}>
-            No need to shop. We can pick up and deliver any item for you. E.g. A document, a gift for a friend, or any personal item from any address.
+      {/* Pickup CTA */}
+      <section className="pickup-cta" style={{ '--cta-color': theme.green }}>
+        <Truck size={120} className="pickup-cta__bg-icon" />
+        <div className="pickup-cta__content">
+          <h3>Need something picked up?</h3>
+          <p>
+            No need to shop. We can pick up and deliver any item for you.
+            E.g. A document, a gift for a friend, or any personal item.
           </p>
           <button
             onClick={() => navigate('/deliveries')}
-            className="flex items-center gap-2"
-            style={{
-              background: '#fff', color: theme.green, fontWeight: 800, fontSize: 13, padding: '11px 20px',
-              borderRadius: 50, border: 'none', cursor: 'pointer', position: 'relative',
-            }}
+            className="pickup-cta__btn"
           >
-            Request a Pick-up <ArrowRight size={15} />
+            Request a Pick-up <ArrowRight size={16} />
           </button>
         </div>
+      </section>
 
-        {showingSearch ? (
-          <SearchResults
-            loading={productIndexLoading}
-            query={query}
-            results={searchResults}
-            theme={theme}
-            onVendorClick={goToVendor}
-          />
-        ) : (
-          <>
-            {!loading && popular.length > 0 && (
-              <RailSection
-                title="Popular"
-                icon={<Flame size={16} color="#f97316" />}
-                items={popular}
-                onItemClick={(v) => navigate(`/vendor/${v.id}`)}
-              />
-            )}
+      {/* Search Results or Feed */}
+      {showingSearch ? (
+        <SearchResults
+          loading={productIndexLoading}
+          query={query}
+          results={searchResults}
+          theme={theme}
+          onVendorClick={goToVendor}
+        />
+      ) : (
+        <>
+          {/* Popular & Trending */}
+          {!loading && popular.length > 0 && (
+            <RailSection
+              title="Popular"
+              icon={<Flame size={18} color="#f97316" />}
+              items={popular}
+              onItemClick={(v) => navigate(`/vendor/${v.id}`)}
+            />
+          )}
 
-            {!loading && trending.length > 0 && (
-              <RailSection
-                title="Trending Now"
-                icon={<TrendingUp size={16} color="#3b82f6" />}
-                items={trending}
-                onItemClick={(v) => navigate(`/vendor/${v.id}`)}
-              />
-            )}
+          {!loading && trending.length > 0 && (
+            <RailSection
+              title="Trending Now"
+              icon={<TrendingUp size={18} color="#3b82f6" />}
+              items={trending}
+              onItemClick={(v) => navigate(`/vendor/${v.id}`)}
+            />
+          )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '28px 0 14px' }}>
-              <h3 style={{ fontSize: 17, fontWeight: 800, color: '#0f1117', margin: 0 }}>
+          {/* Vendors Grid */}
+          <section className="section">
+            <div className="section__header">
+              <h2 className="section__title">
                 {category ? `${category} Vendors` : 'All Vendors'}
-              </h3>
-              {!loading && !error && <span style={{ fontSize: 13, color: '#6b7280' }}>{vendors.length} found</span>}
+              </h2>
+              {!loading && !error && (
+                <span className="section__count">{vendors.length} found</span>
+              )}
             </div>
 
             {loading && (
-              <div style={gridColsStyle}>
-                {Array.from({ length: 4 }).map((_, i) => <VendorCardSkeleton key={i} />)}
+              <div className="vendor-grid">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <VendorCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
             {!loading && error && (
-              <div style={{ textAlign: 'center', padding: 48 }}>
-                <p style={{ color: '#6b7280', marginBottom: 12 }}>{error}</p>
-                <button onClick={loadVendors} style={{ color: theme.green, fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>Try again</button>
+              <div className="state-message">
+                <p>{error}</p>
+                <button onClick={loadVendors} className="state-message__retry">
+                  Try again
+                </button>
               </div>
             )}
 
             {!loading && !error && vendors.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 48, color: '#9ca3af' }}>
-                <Store size={36} style={{ marginBottom: 10 }} />
-                <div style={{ fontWeight: 700 }}>No vendors found</div>
+              <div className="state-message state-message--empty">
+                <Store size={48} />
+                <p>No vendors found</p>
               </div>
             )}
 
             {!loading && !error && vendors.length > 0 && (
-              <div style={gridColsStyle}>
+              <div className="vendor-grid">
                 {vendors.map((v) => (
                   <VendorCard
                     key={v.id}
@@ -619,11 +430,648 @@ export default function CustomerHome() {
                 ))}
               </div>
             )}
-          </>
-        )}
-      </div>
-    </div>
-  );
+          </section>
+        </>
+      )}
+    </main>
+
+    {/* ─── STYLES ─── */}
+    <style jsx>{`
+      /* ── Reset & Base ── */
+      .app-container {
+        min-height: 100vh;
+        background: #f5f7f6;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        padding-bottom: 80px;
+      }
+
+      /* ── Topbar ── */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: linear-gradient(145deg, #0c3324, #0a2a1e);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+      }
+
+      .topbar__inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 14px 16px 18px;
+      }
+
+      .topbar__row--primary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .topbar__brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .topbar__avatar {
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .topbar__avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .topbar__wordmark {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        font-size: clamp(16px, 4vw, 20px);
+        color: #fff;
+        letter-spacing: -0.4px;
+        white-space: nowrap;
+      }
+
+      .topbar__accent {
+        background: linear-gradient(135deg, #f6c453, #e8b84a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .topbar__dots {
+        display: flex;
+        gap: 3px;
+        margin-left: 2px;
+      }
+
+      .topbar__dots span {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #f6c453;
+        opacity: 0.5;
+        animation: dotPulse 1.4s ease-in-out infinite;
+      }
+
+      .topbar__dots span:nth-child(2) { animation-delay: 0.2s; }
+      .topbar__dots span:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes dotPulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.9); }
+        50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 8px rgba(246, 196, 83, 0.4); }
+      }
+
+      .topbar__notif {
+        position: relative;
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid rgba(242, 197, 114, 0.2);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fdfbf6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .topbar__notif:hover {
+        background: rgba(255, 255, 255, 0.12);
+        transform: scale(1.04);
+      }
+
+      .topbar__notif:active {
+        transform: scale(0.92);
+      }
+
+      .topbar__notif-dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #e74c3c;
+        border: 2px solid #0c3324;
+        animation: notificationPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes notificationPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+
+      /* ── Greeting ── */
+      .topbar__greeting {
+        margin-top: 14px;
+      }
+
+      .topbar__greeting h1 {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: clamp(20px, 5vw, 28px);
+        color: #fdfbf6;
+        margin: 0;
+        line-height: 1.2;
+        font-style: italic;
+      }
+
+      .topbar__greeting p {
+        margin: 2px 0 0;
+        font-size: clamp(12px, 1.8vw, 14px);
+        color: rgba(253, 251, 246, 0.55);
+        font-weight: 500;
+      }
+
+      /* ── Search ── */
+      .topbar__search {
+        position: relative;
+        margin-top: 14px;
+      }
+
+      .topbar__search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(18, 32, 26, 0.35);
+        pointer-events: none;
+      }
+
+      .topbar__search-input {
+        width: 100%;
+        height: 48px;
+        padding: 0 44px 0 44px;
+        border: none;
+        border-radius: 14px;
+        background: #f7f4ec;
+        font-family: inherit;
+        font-size: 15px;
+        color: #12201a;
+        outline: none;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.25s ease, transform 0.2s ease;
+      }
+
+      .topbar__search-input::placeholder {
+        color: rgba(18, 32, 26, 0.35);
+      }
+
+      .topbar__search-input:focus {
+        box-shadow: 0 0 0 4px rgba(217, 169, 74, 0.2), 0 4px 20px rgba(0, 0, 0, 0.12);
+        transform: scale(1.005);
+      }
+
+      .topbar__search-clear {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: rgba(18, 32, 26, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+      }
+
+      .topbar__search-clear:hover {
+        background: rgba(18, 32, 26, 0.06);
+        color: rgba(18, 32, 26, 0.6);
+      }
+
+      /* ── Service Card ── */
+      .topbar__service {
+        margin-top: 14px;
+      }
+
+      .service-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        border-radius: 28px;
+        background: rgba(8, 67, 39, 0.6);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .service-card::before {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        top: -120px;
+        left: -80px;
+        background: radial-gradient(circle, rgba(97, 255, 22, 0.04), transparent 70%);
+        pointer-events: none;
+      }
+
+      .service-card__pin {
+        position: relative;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 66px;
+        height: 70px;
+      }
+
+      .service-card__pin svg {
+        color: #5dff19;
+        // filter: drop-shadow(0 0 8px rgba(93, 255, 25, 0.25));
+        width: 32px;
+        height: 32px;
+      }
+
+      .service-card__pin-shadow {
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(93, 255, 25, 0.35);
+        // filter: blur(2px);
+        opacity: 0.7;
+      }
+
+      .service-card__text {
+        position: relative;
+        z-index: 2;
+        line-height: 1.3;
+      }
+
+      .service-card__label {
+        display: block;
+        font-size: clamp(10px, 1.4vw, 12px);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(245, 247, 245, 0.5);
+      }
+
+      .service-card__location {
+        display: block;
+        font-size: clamp(18px, 4vw, 26px);
+        font-weight: 800;
+        color: #5dff19;
+        letter-spacing: -0.8px;
+        margin: -2px 0 0;
+        text-shadow: 0 0 20px rgba(93, 255, 25, 0.08);
+      }
+
+      .service-card__sub {
+        display: block;
+        font-size: clamp(12px, 1.6vw, 14px);
+        font-weight: 500;
+        color: rgba(245, 247, 245, 0.5);
+        letter-spacing: -0.1px;
+        margin-top: -2px;
+      }
+
+      /* ── Main Content ── */
+      .main-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 16px 32px;
+      }
+
+      .section {
+        margin-top: 28px;
+      }
+
+      .section__title {
+        font-size: clamp(12px, 1.6vw, 14px);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        color: #1a1a2e;
+        margin: 0 0 12px;
+        text-transform: uppercase;
+      }
+
+      .section__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .section__count {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      /* ── Category Grid ── */
+      .category-grid {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 4px 0 8px;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .category-grid::-webkit-scrollbar {
+        height: 3px;
+      }
+
+      .category-grid::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+      }
+
+      .category-btn {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        background: var(--cat-bg);
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        font-family: inherit;
+        padding: 0;
+      }
+
+      .category-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      }
+
+      .category-btn--active {
+        border-color: var(--cat-fg);
+        transform: scale(1.04);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      .category-btn__icon {
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .category-btn__label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--cat-fg);
+        text-align: center;
+        line-height: 1.2;
+        max-width: 64px;
+      }
+
+      /* ── Pickup CTA ── */
+      .pickup-cta {
+        position: relative;
+        margin-top: 20px;
+        padding: 24px 20px;
+        border-radius: 24px;
+        background: linear-gradient(145deg, var(--cta-color), #0d9488);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+      }
+
+      .pickup-cta__bg-icon {
+        position: absolute;
+        right: -10px;
+        bottom: -20px;
+        color: rgba(255, 255, 255, 0.08);
+        transform: rotate(-6deg);
+        pointer-events: none;
+      }
+
+      .pickup-cta__content {
+        position: relative;
+        z-index: 2;
+      }
+
+      .pickup-cta__content h3 {
+        color: #fff;
+        font-size: clamp(16px, 2.8vw, 20px);
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.3px;
+      }
+
+      .pickup-cta__content p {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: clamp(12px, 1.6vw, 14px);
+        margin: 6px 0 14px;
+        max-width: 380px;
+        line-height: 1.5;
+      }
+
+      .pickup-cta__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        border: none;
+        border-radius: 50px;
+        background: #fff;
+        color: var(--cta-color);
+        font-weight: 800;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        font-family: inherit;
+      }
+
+      .pickup-cta__btn:hover {
+        transform: scale(1.03);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      .pickup-cta__btn:active {
+        transform: scale(0.95);
+      }
+
+      /* ── Vendor Grid ── */
+      .vendor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+      }
+
+      /* ── State Messages ── */
+      .state-message {
+        text-align: center;
+        padding: 48px 16px;
+        color: #6b7280;
+      }
+
+      .state-message p {
+        margin: 0 0 12px;
+        font-size: 15px;
+      }
+
+      .state-message__retry {
+        background: none;
+        border: none;
+        color: var(--cta-color, #1d5b3d);
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+        text-decoration: underline;
+        transition: opacity 0.2s;
+      }
+
+      .state-message__retry:hover {
+        opacity: 0.7;
+      }
+
+      .state-message--empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: #9ca3af;
+      }
+
+      .state-message--empty svg {
+        color: #d1d5db;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 640px) {
+        .topbar__inner {
+          padding: 12px 14px 16px;
+        }
+
+        .category-btn {
+          width: 68px;
+          height: 68px;
+          border-radius: 16px;
+        }
+
+        .category-btn__icon {
+          font-size: 20px;
+        }
+
+        .category-btn__label {
+          font-size: 9px;
+        }
+
+        .vendor-grid {
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 12px;
+        }
+
+        .service-card {
+          padding: 12px 16px;
+          border-radius: 20px;
+        }
+
+        .service-card__pin {
+          width: 44px;
+        }
+
+        .service-card__pin svg {
+          width: 28px;
+          height: 28px;
+        }
+
+        .pickup-cta {
+          padding: 20px 16px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .category-btn {
+          width: 60px;
+          height: 60px;
+          border-radius: 14px;
+        }
+
+        .category-btn__icon {
+          font-size: 18px;
+        }
+
+        .vendor-grid {
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 10px;
+        }
+
+        .topbar__search-input {
+          height: 42px;
+          font-size: 14px;
+          padding: 0 38px 0 38px;
+        }
+
+        .service-card {
+          padding: 10px 14px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        .topbar__inner {
+          padding: 18px 24px 22px;
+        }
+
+        .topbar__row--primary {
+          gap: 16px;
+        }
+
+        .vendor-grid {
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 18px;
+        }
+
+        .category-grid {
+          gap: 14px;
+        }
+
+        .category-btn {
+          width: 92px;
+          height: 92px;
+          border-radius: 24px;
+        }
+
+        .category-btn__icon {
+          font-size: 28px;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .vendor-grid {
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 22px;
+        }
+
+        .category-btn {
+          width: 100px;
+          height: 100px;
+        }
+      }
+    `}</style>
+  </div>
+);
 }
 
 /* ── SUBCOMPONENTS ── */
