@@ -297,7 +297,7 @@ return (
         <div className="topbar__service">
           <div className="service-card">
             <div className="service-card__pin">
-              <MapPin size={36} strokeWidth={2.4} />
+              <MapPin size={20} strokeWidth={1.4} />
               <div className="service-card__pin-shadow" />
             </div>
             <div className="service-card__text">
@@ -659,14 +659,22 @@ return (
       /* ── Service Card ── */
       .topbar__service {
         margin-top: 14px;
+        display: flex;
+        justify-items: center;
+        align-items: center;
+        width: 100%;
+        height: 48px;
       }
 
       .service-card {
         display: flex;
+        width: 100%;
+        height: 48px;
         align-items: center;
+        justify-content: center;
         gap: 10px;
         padding: 14px 20px;
-        border-radius: 28px;
+        border-radius: 14px;
         background: rgba(8, 67, 39, 0.6);
         backdrop-filter: blur(4px);
         border: 1px solid rgba(255, 255, 255, 0.04);
@@ -699,17 +707,17 @@ return (
       .service-card__pin svg {
         color: #5dff19;
         // filter: drop-shadow(0 0 8px rgba(93, 255, 25, 0.25));
-        width: 32px;
-        height: 32px;
+        width: 20px;
+        height: 20px;
       }
 
       .service-card__pin-shadow {
         position: absolute;
-        bottom: 4px;
+        bottom: 16px;
         left: 50%;
         transform: translateX(-50%);
-        width: 32px;
-        height: 6px;
+        width: 20px;
+        height: 3px;
         border-radius: 50%;
         background: rgba(93, 255, 25, 0.35);
         // filter: blur(2px);
@@ -724,7 +732,7 @@ return (
 
       .service-card__label {
         display: block;
-        font-size: clamp(10px, 1.4vw, 12px);
+        font-size: clamp(8px, 1.4vw, 5px);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -733,7 +741,7 @@ return (
 
       .service-card__location {
         display: block;
-        font-size: clamp(18px, 4vw, 26px);
+        font-size: clamp(8px, 4vw, 16px);
         font-weight: 800;
         color: #5dff19;
         letter-spacing: -0.8px;
@@ -743,7 +751,7 @@ return (
 
       .service-card__sub {
         display: block;
-        font-size: clamp(12px, 1.6vw, 14px);
+        font-size: clamp(8px, 1.4vw, 5px);
         font-weight: 500;
         color: rgba(245, 247, 245, 0.5);
         letter-spacing: -0.1px;
