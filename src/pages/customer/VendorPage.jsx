@@ -1115,20 +1115,6 @@ Any special instructions`;
   );
 }
 
-/* ════════════════════════════════════════════
-   PRODUCT OPTIONS MODAL
-   Opened when a product has variant groups and/or addon groups.
-   Lets the customer choose a variant (radio, price-adjusting),
-   pick addons (checkbox or stepper, price-adjusting, "Free" when
-   0), set a quantity, and add a per-item note — then hands back a
-   structured, fully-priced item for the parent to add to the
-   order summary (never a pre-formatted string).
-
-   focusVariantId / focusAddonId (optional): when the customer landed
-   here from a home-page search match on a specific variant or addon,
-   this scrolls to it and flashes a highlight so they land exactly on
-   the thing they searched for, not just "a modal for the product".
-════════════════════════════════════════════ */
 function ProductOptionsModal({ product, theme, focusVariantId, focusAddonId, onClose, onConfirm }) {
   const variantGroups = (product.variantGroups || []).map(g => ({
     ...g,

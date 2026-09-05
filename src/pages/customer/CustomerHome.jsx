@@ -700,7 +700,7 @@ return (
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 66px;
+        width: 30px;
         height: 70px;
       }
 
@@ -1001,8 +1001,8 @@ return (
         }
 
         .service-card__pin svg {
-          width: 28px;
-          height: 28px;
+          width: 22px;
+          height: 22px;
         }
 
         .pickup-cta {

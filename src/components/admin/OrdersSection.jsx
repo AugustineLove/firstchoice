@@ -73,19 +73,24 @@ export function OrdersSection({ authFetch, theme }) {
     { key:'status',   label:'Status',   render: r => <StatusBadge status={r.orderStatus}/> },
     { key:'rider',    label:'Rider',    render: r => r.rider ? <span style={{ color:'#3b82f6', fontWeight:600 }}>{r.rider.user?.name}</span> : <span style={{ color:'#9ca3af' }}>Unassigned</span> },
     { key:'date',     label:'Date',     render: r => new Date(r.createdAt).toLocaleString() },
-    { key:'assign',   label:'Assign',   render: r => r.orderStatus === 'READY_FOR_PICKUP' ? (
-      <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-        <select value={selectedRider[r.id]||''} onChange={e => setSelectedRider(p => ({...p,[r.id]:e.target.value}))}
-          style={{ height:30, padding:'0 8px', border:'1px solid #e5e7eb', borderRadius:6, fontSize:12, outline:'none', background:'#fff', maxWidth:130 }}>
-          <option value="">Select rider</option>
-          {riders.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
-        </select>
-        <button onClick={() => assignRider(r.id)} disabled={!selectedRider[r.id] || assigning===r.id}
-          style={{ padding:'5px 10px', borderRadius:6, border:'none', background: theme.green, color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4, opacity: !selectedRider[r.id]?0.5:1 }}>
-          {assigning===r.id ? <Loader2 size={11} style={{ animation:'spin 1s linear infinite' }}/> : null} Go
-        </button>
-      </div>
-    ) : null },
+    { key:'assign', label:'Rider', render: r => {
+  const assignable = ['PENDING','RIDER_ASSIGNED','PICKED_UP','IN_TRANSIT','ARRIVED'].includes(r.orderStatus);
+  if (!assignable) return null;
+  const isReassign = !!r.rider;
+  return (
+    <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+      <select value={selectedRider[r.id]||''} onChange={e => setSelectedRider(p => ({...p,[r.id]:e.target.value}))}
+        style={{ height:30, padding:'0 8px', border:'1px solid #e5e7eb', borderRadius:6, fontSize:12, outline:'none', background:'#fff', maxWidth:130 }}>
+        <option value="">{isReassign ? 'Reassign to…' : 'Select rider'}</option>
+        {riders.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
+      </select>
+      <button onClick={() => assignRider(r.id)} disabled={!selectedRider[r.id] || assigning===r.id}
+        style={{ padding:'5px 10px', borderRadius:6, border:'none', background: isReassign ? '#3b82f6' : theme.green, color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4, opacity: !selectedRider[r.id]?0.5:1 }}>
+        {assigning===r.id ? <Loader2 size={11} style={{ animation:'spin 1s linear infinite' }}/> : null} {isReassign ? 'Swap' : 'Go'}
+      </button>
+    </div>
+  );
+}},
      { key:'view', label:'', render: r => (
       <button onClick={() => setViewOrderId(r.id)}
         style={{ padding:'5px 10px', borderRadius:6, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:4 }}>
@@ -103,7 +108,7 @@ export function OrdersSection({ authFetch, theme }) {
         <select value={status} onChange={e => setStatus(e.target.value)}
           style={{ height:38, padding:'0 12px', border:'1.5px solid #e5e7eb', borderRadius:8, fontSize:13, outline:'none', background:'#fff', fontFamily:'inherit' }}>
           <option value="">All Statuses</option>
-          {['PENDING','ACCEPTED','PREPARING','READY_FOR_PICKUP','RIDER_ASSIGNED','PICKED_UP','DELIVERED','CANCELLED'].map(s => <option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
+          {['PENDING','ACCEPTED','PREPARING','READY_FOR_PICKUP','RIDER_ASSIGNED','PICKED_UP', 'ARRIVED', 'DELIVERED','CANCELLED'].map(s => <option key={s} value={s}>{s.replace(/_/g,' ')}</option>)}
         </select>
       </div>
       <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', overflow:'hidden' }}>

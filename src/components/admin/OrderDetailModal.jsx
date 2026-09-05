@@ -11,7 +11,7 @@ import {
 /* ═══════════════════════════════════════════════
    Shared bits for the order detail modal
 ═══════════════════════════════════════════════ */
-const ORDER_STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'RIDER_ASSIGNED', 'PICKED_UP', 'DELIVERED'];
+const ORDER_STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'RIDER_ASSIGNED', 'PICKED_UP', 'ARRIVED', 'DELIVERED'];
 const ALL_STATUSES = [...ORDER_STEPS, 'CANCELLED'];
 
 function InfoCard({ title, icon, children }) {
@@ -270,26 +270,25 @@ export function OrderDetailModal({ orderId, authFetch, theme, riders, onClose, o
               )}
 
               <InfoCard title="Rider" icon={<Bike size={14} />}>
-                {order.rider ? (
-                  <PersonRow name={order.rider.user?.name} phone={order.rider.user?.phone} />
-                ) : (
-                  <div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 8 }}>No rider assigned yet</div>
-                    {order.orderStatus === 'READY_FOR_PICKUP' && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <select value={selectedRider} onChange={e => setSelectedRider(e.target.value)} style={{ ...fieldStyle, height: 36, flex: 1 }}>
-                          <option value="">Select rider</option>
-                          {riders?.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
-                        </select>
-                        <button onClick={assignRider} disabled={!selectedRider || busy}
-                          style={{ padding: '0 14px', borderRadius: 8, border: 'none', background: theme.green, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !selectedRider ? 0.5 : 1 }}>
-                          {busy ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : 'Assign'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </InfoCard>
+              {order.rider ? (
+                <PersonRow name={order.rider.user?.name} phone={order.rider.user?.phone} />
+              ) : (
+                <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 8 }}>No rider assigned yet</div>
+              )}
+
+              {['PENDING', 'RIDER_ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED'].includes(order.orderStatus) && (
+                <div style={{ display: 'flex', gap: 8, marginTop: order.rider ? 12 : 0 }}>
+                  <select value={selectedRider} onChange={e => setSelectedRider(e.target.value)} style={{ ...fieldStyle, height: 36, flex: 1 }}>
+                    <option value="">{order.rider ? 'Reassign to…' : 'Select rider'}</option>
+                    {riders?.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
+                  </select>
+                  <button onClick={assignRider} disabled={!selectedRider || busy}
+                    style={{ padding: '0 14px', borderRadius: 8, border: 'none', background: order.rider ? '#3b82f6' : theme.green, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: !selectedRider ? 0.5 : 1 }}>
+                    {busy ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : (order.rider ? 'Reassign' : 'Assign')}
+                  </button>
+                </div>
+              )}
+            </InfoCard>
 
               {/* ADMIN OVERRIDE */}
               <InfoCard title="Update Status (admin override)" icon={<CheckCircle size={14} />}>
