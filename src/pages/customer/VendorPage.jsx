@@ -36,24 +36,27 @@ function categoryStyle(category) {
   return CATEGORY_STYLE[category?.toLowerCase()] || CATEGORY_STYLE.default;
 }
 
-// NOTE ON THE FLOW BELOW: products are shown for browsing/reference —
-// tapping one either (a) drops it straight into a structured "your
-// order" list, if it has no variants/addons, or (b) opens the options
-// picker so the customer can choose a variant (size, weight...) and any
-// addons (extras) before a fully-priced item gets added to that list.
-// The order note itself stays free text, reserved for anything the
-// picked items don't cover (e.g. "no pepper", "call when you arrive").
-// At submit time the picked items and the free-text note are combined
-// into one human-readable note that's sent to POST /orders — the
-// customer never has to read or edit that combined text themselves.
-//
-// NOTE ON SEARCH-FOCUS: the customer can arrive here from a home-page
-// search that matched a specific product, variant, or addon (not just
-// the vendor). CustomerHome passes that match down via router state
-// (focusProductId / focusVariantId / focusAddonId) — see the effect
-// below that opens the right product and scrolls/highlights the exact
-// thing that matched, instead of just dropping the customer on the
-// vendor page and making them hunt for it again.
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // confirm 0=Mon in your data — swap to Sun-first if that's how you index
+
+function formatOpeningHours(openingHours) {
+  if (!openingHours) return null;
+  if (typeof openingHours === 'string') return openingHours; // legacy vendors
+
+  const dayEntries = DAY_LABELS
+    .map((label, i) => {
+      const shifts = openingHours[i];
+      if (!Array.isArray(shifts) || shifts.length === 0) return null;
+      const times = shifts.map((s) => `${s.start}–${s.end}`).join(', ');
+      return { label, times };
+    })
+    .filter(Boolean);
+
+  if (dayEntries.length === 0) return null;
+
+  // If every day has identical single hours, collapse to one line
+  const allSame = dayEntries.length === 7 && dayEntries.every((d) => d.times === dayEntries[0].times);
+  return allSame ? `Mon–Sun ${dayEntries[0].times}` : dayEntries.map((d) => `${d.label} ${d.times}`).join(' · ');
+}
 
 function money(n) {
   return `GHS ${Number(n || 0).toFixed(2)}`;
@@ -451,6 +454,8 @@ Any special instructions`;
     return json;
   }
 
+  console.log('openingHours:', vendor?.openingHours, typeof vendor?.openingHours);
+  const openingHoursLabel = formatOpeningHours(vendor?.openingHours);
   return (
     <div style={{ minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans', system-ui, sans-serif", paddingBottom: 40 }}>
 
@@ -485,7 +490,7 @@ Any special instructions`;
             <h1 className="vp-hero__name">{vendor.businessName}</h1>
             <div className="vp-hero__meta">
               {vendor.address && <span><MapPin size={12} />{vendor.address}</span>}
-              {vendor.openingHours && <span><Clock size={12} />{vendor.openingHours}</span>}
+              {openingHoursLabel && <span><Clock size={12} />{openingHoursLabel}</span>}
             </div>
           </div>
         )}
