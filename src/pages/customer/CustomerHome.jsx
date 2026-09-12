@@ -323,7 +323,7 @@ return (
         </div>
         <div className="app-banner__text">
           <strong>Get the FirstChoice app</strong>
-          <span>Faster ordering, live tracking, on {storeLabel}</span>
+          <span>Faster ordering, smooth experience, on {storeLabel}</span>
         </div>
         <span className="app-banner__cta">
           Get <ArrowUpRight size={14} />
