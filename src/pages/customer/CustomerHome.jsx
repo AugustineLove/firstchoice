@@ -14,12 +14,6 @@ const CATEGORIES = [
   { label: 'Electronics', icon: '📱', value: 'Electronics', bg: '#EDE9FE', fg: '#7C3AED' },
 ];
 
-// Looks for `q` in a product's own name/category as well as every variant
-// and addon name nested under it, and returns one match descriptor per
-// hit. This is what lets "extra cheese" or "large" surface a vendor even
-// when neither word appears in the product's own name — and each match
-// carries enough (productId + variantId/addonId) for VendorPage to open
-// straight to that exact thing instead of just the vendor's front page.
 function findProductMatches(product, q) {
   const matches = [];
 
@@ -47,6 +41,19 @@ function findProductMatches(product, q) {
   return matches;
 }
 
+const APP_STORE_URL = 'https://apps.apple.com/gh/app/first-choice/id6786762917';
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.first_choice.first_choice_mob';
+
+
+function detectPlatform() {
+  if (typeof navigator === 'undefined') return 'unknown';
+  const ua = navigator.userAgent || navigator.vendor || '';
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'unknown';
+}
+const APP_BANNER_DISMISSED_KEY = 'fc_app_banner_dismissed';
+
 export default function CustomerHome() {
   const { user, authFetch } = useAuth();
   const { theme } = useTheme();
@@ -55,18 +62,24 @@ export default function CustomerHome() {
 
   const [category, setCategory] = useState(null);
 
-  // ── ONE vendor fetch, full unfiltered list. Category filtering happens
-  // entirely client-side below (see `vendors` useMemo). This used to be a
-  // separate `/vendors?category=X` fetch per category click, which had two
-  // real problems: (1) it trusted the button's capitalized label ("Food")
-  // to exact-match whatever casing the backend actually stores businessType
-  // in — every other place in this file defensively lowercases businessType
-  // before comparing, which only exists because that casing isn't reliable,
-  // so the server-side filter could silently return zero results depending
-  // on how a given vendor's type was saved; and (2) clicking categories
-  // quickly could let an older, slower request resolve after a newer one
-  // and overwrite it with stale results. Filtering a single already-loaded
-  // list in memory can't race and can't miss on case.
+   const platform = useMemo(detectPlatform, []);
+  const [appBannerDismissed, setAppBannerDismissed] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem(APP_BANNER_DISMISSED_KEY) === '1'
+  );
+
+  const storeUrl = platform === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+  const storeLabel = platform === 'ios' ? 'App Store' : 'Google Play';
+
+  function handleAppBannerTap() {
+    window.open(storeUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleDismissAppBanner(e) {
+    e.stopPropagation();
+    setAppBannerDismissed(true);
+    try { localStorage.setItem(APP_BANNER_DISMISSED_KEY, '1'); } catch {}
+  }
+
   const [allVendors, setAllVendors] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -219,11 +232,7 @@ export default function CustomerHome() {
 
   const showingSearch = searchOpen && query.trim().length > 0;
 
-  // Takes the customer straight to the vendor page, and — when the hit
-  // that was clicked came from a specific product/variant/addon rather
-  // than just the vendor's own name — carries that along as router state
-  // so VendorPage can open right to it instead of leaving the customer to
-  // find it again themselves.
+
   function goToVendor(vendorId, match) {
     navigate(
       `/vendor/${vendorId}`,
@@ -231,9 +240,6 @@ export default function CustomerHome() {
     );
   }
 
-  // Responsive grid columns without relying on window.innerWidth at render
-  // time (that only evaluates once per render pass and never reacts to an
-  // actual resize — CSS handles this correctly on its own).
   const gridColsStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 };
 
 return (
@@ -309,6 +315,29 @@ return (
         </div>
       </div>
     </header>
+
+        {!appBannerDismissed && (
+      <div className="app-banner" onClick={handleAppBannerTap}>
+        <div className="app-banner__icon">
+          <img src="/icons/logo.png" alt="" />
+        </div>
+        <div className="app-banner__text">
+          <strong>Get the FirstChoice app</strong>
+          <span>Faster ordering, live tracking, on {storeLabel}</span>
+        </div>
+        <span className="app-banner__cta">
+          Get <ArrowUpRight size={14} />
+        </span>
+        <button
+          type="button"
+          onClick={handleDismissAppBanner}
+          className="app-banner__close"
+          aria-label="Dismiss"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )}
 
     {/* ─── MAIN CONTENT ─── */}
     <main className="main-content">
@@ -851,6 +880,78 @@ return (
         text-align: center;
         line-height: 1.2;
         max-width: 64px;
+      }
+
+            /* ── App Download Banner ── */
+      .app-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 1200px;
+        margin: 10px auto 0;
+        padding: 10px 12px;
+        background: #fff;
+        border-bottom: 1px solid #ececec;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .app-banner__icon {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .app-banner__icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .app-banner__text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+      }
+
+      .app-banner__text strong {
+        font-size: 13px;
+        font-weight: 800;
+        color: #0f1117;
+      }
+
+      .app-banner__text span {
+        font-size: 11px;
+        color: #6b7280;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .app-banner__cta {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 12px;
+        font-weight: 800;
+        color: ${'${theme.green}'};
+        padding-right: 6px;
+      }
+
+      .app-banner__close {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        padding: 4px;
+        color: #9ca3af;
+        cursor: pointer;
+        display: flex;
       }
 
       /* ── Pickup CTA ── */
