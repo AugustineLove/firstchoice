@@ -12,68 +12,106 @@ const STATUS_STYLE = {
   DELIVERED: { color: '#065f46', bg: '#d1fae5' }, CANCELLED: { color: '#991b1b', bg: '#fee2e2' },
 };
 
-/* ════════════════════════════════════════════
-   Same tiered-by-distance estimate used in the
-   mobile app (deliveries_screen.dart) — keep the
-   two in sync if the pricing table changes.
-════════════════════════════════════════════ */
-export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
-  if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
-  const r = 6371;
-  const toRad = (d) => (d * Math.PI) / 180;
+
+const _kBaseFeeGhs = 5;
+const _kPerKmGhs = 2;
+
+// export function calculateDeliveryEstimate({ pickupLat, pickupLng, destLat, destLng }) {
+//   if (pickupLat == null || pickupLng == null || destLat == null || destLng == null) return 0;
+//   const r = 6371;
+//   const toRad = (d) => (d * Math.PI) / 180;
+//   const dLat = toRad(destLat - pickupLat);
+//   const dLng = toRad(destLng - pickupLng);
+//   const a =
+//     Math.sin(dLat / 2) ** 2 +
+//     Math.cos(toRad(pickupLat)) * Math.cos(toRad(destLat)) * Math.sin(dLng / 2) ** 2;
+//   const km = r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+//   if (km <= 1) return 5;
+//   if (km <= 1.5) return 6;
+//   if (km <= 2) return 7;
+//   if (km <= 2.5) return 8;
+//   if (km <= 3) return 9;
+//   if (km <= 3.5) return 10;
+//   if (km <= 4) return 11;
+//   if (km <= 4.5) return 12;
+//   if (km <= 5) return 13;
+//   if (km <= 5.5) return 14;
+//   if (km <= 6) return 15;
+//   if (km <= 6.5) return 16;
+//   if (km <= 7) return 17;
+//   if (km <= 7.5) return 18;
+//   if (km <= 8) return 19;
+//   if (km <= 8.5) return 20;
+//   if (km <= 9) return 21;
+//   if (km <= 9.5) return 22;
+//   if (km <= 10) return 23;
+//   if (km <= 10.5) return 24;
+//   if (km <= 11) return 25;
+//   if (km <= 11.5) return 26;
+//   if (km <= 12) return 27;
+//   if (km <= 12.5) return 28;
+//   if (km <= 13) return 29;
+//   if (km <= 13.5) return 30;
+//   if (km <= 14) return 31;
+//   if (km <= 14.5) return 32;
+//   if (km <= 15) return 33;
+//   if (km <= 15.5) return 34;
+//   if (km <= 16) return 35;
+//   if (km <= 16.5) return 36;
+//   if (km <= 17) return 37;
+//   if (km <= 17.5) return 38;
+//   if (km <= 18) return 39;
+//   if (km <= 18.5) return 40;
+//   if (km <= 19) return 41;
+//   if (km <= 19.5) return 42;
+//   if (km <= 20) return 43;
+//   if (km <= 20.5) return 44;
+//   if (km <= 21) return 45;
+//   if (km <= 21.5) return 46;
+//   if (km <= 22) return 47;
+//   if (km <= 22.5) return 48;
+//   if (km <= 23) return 49;
+//   return 50;
+// }
+
+export function calculateDeliveryEstimate({
+  pickupLat,
+  pickupLng,
+  destLat,
+  destLng,
+}) {
+  if (
+    pickupLat == null ||
+    pickupLng == null ||
+    destLat == null ||
+    destLng == null
+  ) {
+    return 10; // fallback fee
+  }
+
+  const earthRadiusKm = 6371.0;
+
+  const toRad = (degrees) => (degrees * Math.PI) / 180;
+
   const dLat = toRad(destLat - pickupLat);
   const dLng = toRad(destLng - pickupLng);
+
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(pickupLat)) * Math.cos(toRad(destLat)) * Math.sin(dLng / 2) ** 2;
-  const km = r * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    Math.cos(toRad(pickupLat)) *
+      Math.cos(toRad(destLat)) *
+      Math.sin(dLng / 2) ** 2;
 
-  if (km <= 1) return 5;
-  if (km <= 1.5) return 6;
-  if (km <= 2) return 7;
-  if (km <= 2.5) return 8;
-  if (km <= 3) return 9;
-  if (km <= 3.5) return 10;
-  if (km <= 4) return 11;
-  if (km <= 4.5) return 12;
-  if (km <= 5) return 13;
-  if (km <= 5.5) return 14;
-  if (km <= 6) return 15;
-  if (km <= 6.5) return 16;
-  if (km <= 7) return 17;
-  if (km <= 7.5) return 18;
-  if (km <= 8) return 19;
-  if (km <= 8.5) return 20;
-  if (km <= 9) return 21;
-  if (km <= 9.5) return 22;
-  if (km <= 10) return 23;
-  if (km <= 10.5) return 24;
-  if (km <= 11) return 25;
-  if (km <= 11.5) return 26;
-  if (km <= 12) return 27;
-  if (km <= 12.5) return 28;
-  if (km <= 13) return 29;
-  if (km <= 13.5) return 30;
-  if (km <= 14) return 31;
-  if (km <= 14.5) return 32;
-  if (km <= 15) return 33;
-  if (km <= 15.5) return 34;
-  if (km <= 16) return 35;
-  if (km <= 16.5) return 36;
-  if (km <= 17) return 37;
-  if (km <= 17.5) return 38;
-  if (km <= 18) return 39;
-  if (km <= 18.5) return 40;
-  if (km <= 19) return 41;
-  if (km <= 19.5) return 42;
-  if (km <= 20) return 43;
-  if (km <= 20.5) return 44;
-  if (km <= 21) return 45;
-  if (km <= 21.5) return 46;
-  if (km <= 22) return 47;
-  if (km <= 22.5) return 48;
-  if (km <= 23) return 49;
-  return 50;
+  const c =
+    2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  const distanceKm = earthRadiusKm * c;
+
+  const fee =
+    _kBaseFeeGhs + distanceKm * _kPerKmGhs;
+
+  return Math.round(fee);
 }
 
 /* ── matches backend calculateErrandFee — keep in sync ── */
