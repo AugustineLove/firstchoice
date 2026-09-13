@@ -250,20 +250,20 @@ return (
           <img src="/icons/logo.png" alt="" />
         </div>
         <div className="app-banner__text">
-          <strong>Get the FirstChoice app now!</strong>
+          <strong>Get the FirstChoice on {storeLabel} now!</strong>
           <span>You may not have the complete experience here</span>
         </div>
         <span className="app-banner__cta">
           Get <ArrowUpRight size={14} />
         </span>
-        <button
+        {/* <button
           type="button"
           onClick={handleDismissAppBanner}
           className="app-banner__close"
           aria-label="Dismiss"
         >
           <X size={16} />
-        </button>
+        </button> */}
       </div>
     )}
     {/* ─── TOPBAR ─── */}
