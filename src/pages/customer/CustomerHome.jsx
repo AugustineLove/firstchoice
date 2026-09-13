@@ -244,7 +244,7 @@ export default function CustomerHome() {
 
 return (
   <div className="app-container">
-    {!appBannerDismissed || appBannerDismissed &&  (
+    {!appBannerDismissed &&  (
       <div className="app-banner" onClick={handleAppBannerTap}>
         <div className="app-banner__icon">
           <img src="/icons/logo.png" alt="" />
