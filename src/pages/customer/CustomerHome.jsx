@@ -244,6 +244,28 @@ export default function CustomerHome() {
 
 return (
   <div className="app-container">
+    {!appBannerDismissed || appBannerDismissed &&  (
+      <div className="app-banner" onClick={handleAppBannerTap}>
+        <div className="app-banner__icon">
+          <img src="/icons/logo.png" alt="" />
+        </div>
+        <div className="app-banner__text">
+          <strong>Get the FirstChoice app now!</strong>
+          <span>You may not have the complete experience here</span>
+        </div>
+        <span className="app-banner__cta">
+          Get <ArrowUpRight size={14} />
+        </span>
+        <button
+          type="button"
+          onClick={handleDismissAppBanner}
+          className="app-banner__close"
+          aria-label="Dismiss"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    )}
     {/* ─── TOPBAR ─── */}
     <header className="topbar">
       <div className="topbar__inner">
@@ -316,28 +338,7 @@ return (
       </div>
     </header>
 
-        {!appBannerDismissed && (
-      <div className="app-banner" onClick={handleAppBannerTap}>
-        <div className="app-banner__icon">
-          <img src="/icons/logo.png" alt="" />
-        </div>
-        <div className="app-banner__text">
-          <strong>Get the FirstChoice app</strong>
-          <span>Faster ordering, smooth experience, on {storeLabel}</span>
-        </div>
-        <span className="app-banner__cta">
-          Get <ArrowUpRight size={14} />
-        </span>
-        <button
-          type="button"
-          onClick={handleDismissAppBanner}
-          className="app-banner__close"
-          aria-label="Dismiss"
-        >
-          <X size={16} />
-        </button>
-      </div>
-    )}
+        
 
     {/* ─── MAIN CONTENT ─── */}
     <main className="main-content">
@@ -888,12 +889,15 @@ return (
         align-items: center;
         gap: 10px;
         max-width: 1200px;
+        height: 100px;
         margin: 10px auto 0;
         padding: 10px 12px;
         background: #fff;
         border-bottom: 1px solid #ececec;
         cursor: pointer;
-        position: relative;
+        position: sticky;
+        top: 0;
+        z-index: 60;
       }
 
       .app-banner__icon {
