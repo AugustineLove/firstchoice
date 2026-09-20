@@ -995,6 +995,18 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
                 </div>
               </div>
               {selectedJob.note && <div className="fc-note">{selectedJob.note}</div>}
+              
+              <div className="fc-detail-meta">
+               
+                {selectedJob.pickup.phone && (
+                <>
+                    <span><strong>Vendor</strong></span>
+                  <a href={`tel:${selectedJob.pickup.phone}`} className="fc-tel">
+                    <Phone size={11} /> {selectedJob.pickup.phone}
+                  </a>
+                </>
+                )}
+              </div>
               <div className="fc-detail-meta">
                 <span><strong>{ghs(selectedJob.amount)}</strong> {selectedJob.paymentMethod}</span>
                 {selectedJob.customerPhone && (
@@ -1004,7 +1016,6 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
                 )}
               </div>
             </div>
-
             <div className="fc-detail-foot">
               <div className="fc-detail-foot-title">
                 {selectedJob.unassigned ? 'Closest free riders' : 'Reassign to'}
