@@ -11,6 +11,7 @@ import {
   Megaphone,
   DollarSign,
   AlertTriangle,
+  MapPin,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +31,11 @@ import { DeliveriesSection } from '../../components/admin/DeliveriesSection';
 import { SettingsSection } from '../../components/admin/SettingsSection';
 import { VendorFormModal } from '../../components/admin/VendorFormModal';
 import { VendorsSection } from '../../components/admin/VendorSection';
+import { DispatchQueueWidget } from '../../components/admin/DispatchQueueWidget';
+import { NotificationBell } from '../../components/admin/NotificationBell';
+import { ActivityLogSection } from '../../components/admin/Activitylogsection';
+import { LiveRiderMap } from '../../components/admin/LiveRiderMap';
+import { GlobalSearch } from '../../components/admin/GlobalSearch';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -214,7 +220,7 @@ function Overview({ authFetch, theme }) {
   );
 
   const { kpis, dailyTrend, userGrowth, orderStatusBreakdown, deliveryStatusBreakdown, orderTypeBreakdown, paymentMethodBreakdown, topVendors, topRiders } = data;
-
+  
   return (
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
@@ -226,7 +232,8 @@ function Overview({ authFetch, theme }) {
           <RefreshCw size={14} className={loading ? 'spin' : ''}/> Refresh
         </button>
       </div>
-
+        <DispatchQueueWidget authFetch={authFetch} theme={theme} />
+  
       {/* KPI GRID */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))', gap:16, marginBottom:22 }}>
         <StatCard icon={<Users size={20}/>}       label="Total Users"      value={kpis.totalUsers}  sub={`${kpis.usersByRole.CUSTOMER||0} customers`} color="#3b82f6"/>
@@ -371,7 +378,7 @@ function Overview({ authFetch, theme }) {
 }
 
 /* ── USERS ── */
-function UsersSection({ authFetch, theme }) {
+function UsersSection({ authFetch, theme, focusId }) {
   const [data,    setData]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [page,    setPage]    = useState(1);
@@ -392,6 +399,7 @@ function UsersSection({ authFetch, theme }) {
   }, [authFetch, page, search, role]);
 
   useEffect(() => { load(1, search, role); }, [search, role]);
+  useEffect(() => { if (focusId) setSearch(focusId); }, [focusId]);
 
   async function toggleStatus(userId, currentStatus) {
     setActing(userId);
@@ -450,7 +458,7 @@ function UsersSection({ authFetch, theme }) {
 
 
 /* ── RIDERS ── */
-function RidersSection({ authFetch, theme }) {
+function RidersSection({ authFetch, theme, focusId }) {
   const [data,    setData]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [page,    setPage]    = useState(1);
@@ -470,6 +478,8 @@ function RidersSection({ authFetch, theme }) {
   }, [authFetch, avail]);
 
   useEffect(() => { load(1, avail); }, [avail]);
+
+   useEffect(() => { if (focusId) setViewRiderId(focusId); }, [focusId]);
 
   const columns = [
     { key:'rider', label:'Rider', render: r => <div><div style={{ fontWeight:700, color:'#0f1117' }}>{r.user?.name}</div><div style={{ color:'#9ca3af', fontSize:12 }}>{r.user?.phone}</div></div> },
@@ -547,6 +557,8 @@ const NAV_ITEMS = [
   { id:'reports', label:'Reports', icon:<BarChart2 size={18}/> },
   { id:'settings', label:'Settings', icon:<Settings size={18}/> },
   { id:'broadcast', label:'Broadcast', icon:<Megaphone size={18}/> },
+  { id: 'activity', label: 'Activity Log', icon: <ClipboardList size={18}/> },
+  { id: 'live', label: 'Live Map', icon: <MapPin size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -556,6 +568,14 @@ export default function AdminDashboard() {
 
   const [section, setSection]   = useState('overview');
   const [sideOpen, setSideOpen] = useState(true);
+  const [focus, setFocus] = useState(null);
+
+  const goToSection = useCallback((id) => { setSection(id); setFocus(null); }, []);
+
+  const openHit = useCallback((hit) => {
+    setSection(hit.section);
+    setFocus({ type: hit.type, id: hit.id });
+  }, []);
 
   /* Redirect if not admin */
   useEffect(() => {
@@ -574,14 +594,16 @@ export default function AdminDashboard() {
 
   const SECTIONS = {
     overview: <Overview authFetch={authFetch} theme={theme}/>,
-    users:      <UsersSection authFetch={authFetch} theme={theme}/>,
-    vendors:    <VendorsSection authFetch={authFetch} theme={theme}/>,
-    riders:     <RidersSection authFetch={authFetch} theme={theme}/>,
-    orders:     <OrdersSection authFetch={authFetch} theme={theme}/>,
-    deliveries: <DeliveriesSection authFetch={authFetch} theme={theme}/>,
+    users:      <UsersSection authFetch={authFetch} theme={theme} focus={focus?.type === 'user' ? focus.id : null}/>,
+    vendors:    <VendorsSection authFetch={authFetch} theme={theme} focus={focus?.type === 'vendor' ? focus.id : null}/>,
+    riders:     <RidersSection authFetch={authFetch} theme={theme} focus={focus?.type === 'rider' ? focus.id : null}/>,
+    orders:     <OrdersSection authFetch={authFetch} theme={theme} focus={focus?.type === 'order' ? focus.id : null}/>,
+    deliveries: <DeliveriesSection authFetch={authFetch} theme={theme} focus={focus?.type === 'delivery' ? focus.id : null}/>,
     reports: <ReportsSection authFetch={authFetch} theme={theme}/>,
     settings: <SettingsSection authFetch={authFetch} theme={theme}/>,
     broadcast: <BroadcastSection authFetch={authFetch} theme={theme}/>,
+    activity: <ActivityLogSection authFetch={authFetch} theme={theme}/>,
+    live: <LiveRiderMap authFetch={authFetch} theme={theme}/>,
   };
 
   return (
@@ -667,8 +689,14 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      
+
       {/* ── MAIN ── */}
       <main style={{ flex:1, padding:'32px 28px', overflowY:'auto', minWidth:0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, padding: '0 0 20px' }}>
+        <GlobalSearch authFetch={authFetch} theme={theme} onOpen={openHit} />
+        <NotificationBell onNavigate={goToSection} />
+      </div>
         {SECTIONS[section]}
       </main>
 

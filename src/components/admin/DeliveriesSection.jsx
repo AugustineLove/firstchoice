@@ -1,25 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Users, Store, Bike, ShoppingBag, Truck,
-  ClipboardList, BarChart2, LogOut, Menu, X, ChevronDown,
-  RefreshCw, CheckCircle, XCircle, Clock, AlertCircle,
-  TrendingUp, Package, Loader2, Search, Filter, Eye,
-  UserCheck, UserX, ChevronLeft, ChevronRight, Plus, Settings,
-  ImagePlus, Trash2,
-  Megaphone,
-  DollarSign,
-  AlertTriangle,
+  Loader2, Eye,
 } from 'lucide-react';
-import {
-  AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  LineChart,
-  Line,
-} from 'recharts';
 import { fieldStyle, fmtGHS, Pagination, StatCard, StatusBadge, Table } from '../../pages/public/AdminDashboard';
-
+import { DeliveryDetailModal } from './DeliveryDetailModal';
 
 export function DeliveriesSection({ authFetch, theme }) {
   const [data,    setData]    = useState([]);
@@ -30,6 +15,7 @@ export function DeliveriesSection({ authFetch, theme }) {
   const [riders,  setRiders]  = useState([]);
   const [assigning, setAssigning] = useState(null);
   const [selectedRider, setSelectedRider] = useState({});
+  const [viewDeliveryId, setViewDeliveryId] = useState(null);
 
   const load = useCallback(async (p=1, s=status) => {
     setLoading(true);
@@ -77,19 +63,30 @@ export function DeliveriesSection({ authFetch, theme }) {
 ) },
     { key:'status',      label:'Status',      render: r => <StatusBadge status={r.status}/> },
     { key:'rider',       label:'Rider',       render: r => r.rider ? <span style={{ color:'#3b82f6', fontWeight:600 }}>{r.rider.user?.name}</span> : <span style={{ color:'#9ca3af' }}>Unassigned</span> },
-    { key:'assign',      label:'Assign',      render: r => r.status === 'PENDING' && !r.assignedRiderId ? (
-      <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-        <select value={selectedRider[r.id]||''} onChange={e => setSelectedRider(p => ({...p,[r.id]:e.target.value}))}
-          style={{ height:30, padding:'0 8px', border:'1px solid #e5e7eb', borderRadius:6, fontSize:12, outline:'none', background:'#fff', maxWidth:130 }}>
-          <option value="">Select rider</option>
-          {riders.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
-        </select>
-        <button onClick={() => assignRider(r.id)} disabled={!selectedRider[r.id] || assigning===r.id}
-          style={{ padding:'5px 10px', borderRadius:6, border:'none', background: theme.green, color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4, opacity: !selectedRider[r.id]?0.5:1 }}>
-          {assigning===r.id ? <Loader2 size={11} style={{ animation:'spin 1s linear infinite' }}/> : null} Assign
-        </button>
-      </div>
-    ) : null },
+    { key:'assign', label:'Rider', render: r => {
+  const assignable = ['PENDING','ACCEPTED','PICKED_UP','IN_TRANSIT'].includes(r.status);
+  if (!assignable) return null;
+  const isReassign = !!r.rider;
+  return (
+    <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+      <select value={selectedRider[r.id]||''} onChange={e => setSelectedRider(p => ({...p,[r.id]:e.target.value}))}
+        style={{ height:30, padding:'0 8px', border:'1px solid #e5e7eb', borderRadius:6, fontSize:12, outline:'none', background:'#fff', maxWidth:130 }}>
+        <option value="">{isReassign ? 'Reassign to…' : 'Select rider'}</option>
+        {riders.map(rd => <option key={rd.id} value={rd.id}>{rd.user?.name}</option>)}
+      </select>
+      <button onClick={() => assignRider(r.id)} disabled={!selectedRider[r.id] || assigning===r.id}
+        style={{ padding:'5px 10px', borderRadius:6, border:'none', background: isReassign ? '#3b82f6' : theme.green, color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, display:'flex', alignItems:'center', gap:4, opacity: !selectedRider[r.id]?0.5:1 }}>
+        {assigning===r.id ? <Loader2 size={11} style={{ animation:'spin 1s linear infinite' }}/> : null} {isReassign ? 'Swap' : 'Go'}
+      </button>
+    </div>
+  );
+}},
+    { key:'view', label:'', render: r => (
+      <button onClick={() => setViewDeliveryId(r.id)}
+        style={{ padding:'5px 10px', borderRadius:6, border:'1px solid #e5e7eb', background:'#fff', cursor:'pointer', fontSize:11, fontWeight:700, color:'#374151', display:'flex', alignItems:'center', gap:4 }}>
+        <Eye size={11}/> View
+      </button>
+    )},
   ];
 
   return (
@@ -108,6 +105,16 @@ export function DeliveriesSection({ authFetch, theme }) {
         <Table columns={columns} data={data} loading={loading} emptyMsg="No deliveries found"/>
         <Pagination page={page} totalPages={total} onChange={p => { setPage(p); load(p); }}/>
       </div>
+      {viewDeliveryId && (
+        <DeliveryDetailModal
+          deliveryId={viewDeliveryId}
+          authFetch={authFetch}
+          theme={theme}
+          riders={riders}
+          onClose={() => setViewDeliveryId(null)}
+          onChanged={() => load(page)}
+        />
+      )}
     </div>
   );
 }

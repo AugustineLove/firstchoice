@@ -700,7 +700,7 @@ function AdminVendorProfile({ vendor, vendorId, authFetch, theme, onUpdated }) {
         <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f0f0f0', padding:16, display:'flex', flexDirection:'column', gap:12 }}>
           <FInput label="Phone Number" value={form.phone} onChange={v=>set('phone',v)} placeholder="0241234567"/>
           <FInput label="Address" value={form.address} onChange={v=>set('address',v)} placeholder="e.g. Market Street, Agona Nkwanta" textarea rows={2}/>
-          <FInput label="Opening Hours" value={form.openingHours} onChange={v=>set('openingHours',v)} placeholder="e.g. Mon-Sat 7am-9pm"/>
+          {/* <FInput label="Opening Hours" value={form.openingHours} onChange={v=>set('openingHours',v)} placeholder="e.g. Mon-Sat 7am-9pm"/> */}
         </div>
       </div>
 
@@ -818,7 +818,7 @@ export function VendorManageModal({ vendor, authFetch, theme, onClose, onChanged
                   <div><span style={{ color:'#9ca3af' }}>Type:</span> <strong>{full.businessType}</strong></div>
                   <div><span style={{ color:'#9ca3af' }}>Rating:</span> <strong>⭐ {Number(full.rating||0).toFixed(1)}</strong></div>
                   <div style={{ gridColumn:'1 / -1' }}><span style={{ color:'#9ca3af' }}>Address:</span> <strong>{full.address || '—'}</strong></div>
-                  <div><span style={{ color:'#9ca3af' }}>Hours:</span> <strong>{full.openingHours || '—'}</strong></div>
+                  {/* <div><span style={{ color:'#9ca3af' }}>Hours:</span> <strong>{full.openingHours || '—'}</strong></div> */}
                   <div><span style={{ color:'#9ca3af' }}>Joined:</span> <strong>{full.createdAt ? new Date(full.createdAt).toLocaleDateString() : '—'}</strong></div>
                 </div>
               </div>
