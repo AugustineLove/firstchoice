@@ -28,11 +28,35 @@ const STATUS = {
   PICKED_UP:      { color: '#f59e0b', label: 'Picked up' },
   IN_TRANSIT:     { color: '#f59e0b', label: 'On the way' },
   ARRIVED:        { color: '#10b981', label: 'At the door' },
+  DELIVERED:      { color: '#059669', label: 'Delivered' },
+  CANCELLED:      { color: '#dc2626', label: 'Cancelled' },
 };
 const statusOf = (s) => STATUS[s] || { color: '#6b7280', label: s };
 
 const RIDER_COLORS = { ONLINE: '#10b981', BUSY: '#f59e0b', OFFLINE: '#9ca3af' };
 const URGENCY_COLOR = { stale: '#dc2626', warn: '#f59e0b', fresh: '#9ca3af' };
+
+/* ── Status machines, mirrored from the backend, used to decide which
+   "mark as..." buttons make sense for the currently selected job. ── */
+const ORDER_STATUSES = ['PENDING', 'ACCEPTED', 'RIDER_ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'CANCELLED'];
+const DELIVERY_STATUSES = ['PENDING', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+const MANUAL_TRANSITIONS = {
+  PENDING: ['ACCEPTED', 'CANCELLED'],
+  ACCEPTED: ['PICKED_UP', 'CANCELLED'],
+  PICKED_UP: ['IN_TRANSIT', 'CANCELLED'],
+  IN_TRANSIT: ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
+// Statuses the backend refuses to set without a rider already on the job.
+const RIDER_REQUIRED_STATUSES = ['RIDER_ASSIGNED', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED'];
+
+function nextStatusesFor(job) {
+  if (!job) return [];
+  if (job.kind === 'manual') return MANUAL_TRANSITIONS[job.status] || [];
+  const all = job.kind === 'order' ? ORDER_STATUSES : DELIVERY_STATUSES;
+  return all.filter((s) => s !== job.status);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    Helpers
@@ -180,12 +204,132 @@ function Skeleton({ h = 14, w = '100%', r = 6, mt = 0 }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   Address picker — search saved Locations first, fall back to free text
+═══════════════════════════════════════════════════════════════════════ */
+function AddressPicker({ label, value, locations, loadingLocations, accent, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const results = useMemo(() => {
+    const list = locations || [];
+    const q = query.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((l) => l.name?.toLowerCase().includes(q) || l.address?.toLowerCase().includes(q));
+  }, [locations, query]);
+
+  function pickSaved(loc) {
+    onChange({ address: loc.address, name: loc.name, latitude: loc.latitude, longitude: loc.longitude, custom: false });
+    setQuery('');
+    setOpen(false);
+  }
+
+  function useTyped() {
+    if (!query.trim()) return;
+    onChange({ address: query.trim(), name: null, latitude: null, longitude: null, custom: true });
+    setQuery('');
+    setOpen(false);
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <label className="fc-label">{label}</label>
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="fc-field"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left', cursor: 'pointer',
+            borderColor: value?.address ? accent : undefined,
+            background: value?.address ? `${accent}10` : '#fff',
+          }}
+        >
+          {value?.address ? <CheckCircle2 size={14} color={accent} /> : <Search size={14} color="#9ca3af" />}
+          <span style={{
+            flex: 1, minWidth: 0, fontSize: 13, color: value?.address ? '#0f1117' : '#9ca3af',
+            fontWeight: value?.address ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {value?.address || 'Search a saved location or type an address…'}
+          </span>
+          {value?.address && !value.custom && (
+            <span style={{ fontSize: 8.5, fontWeight: 900, color: accent, background: `${accent}18`, padding: '2px 6px', borderRadius: 999, flexShrink: 0 }}>PIN</span>
+          )}
+          {value?.address && value.custom && (
+            <span style={{ fontSize: 8.5, fontWeight: 900, color: '#9ca3af', background: '#f1f2f4', padding: '2px 6px', borderRadius: 999, flexShrink: 0 }}>NO PIN</span>
+          )}
+        </button>
+      ) : (
+        <div>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') useTyped(); if (e.key === 'Escape') setOpen(false); }}
+            placeholder="Search saved locations or type a new address"
+            className="fc-field"
+          />
+          <div style={{
+            marginTop: 6, maxHeight: 190, overflowY: 'auto', border: '1px solid #e9eaec',
+            borderRadius: 10, background: '#fff', boxShadow: '0 4px 14px rgba(0,0,0,.08)',
+          }}>
+            {loadingLocations ? (
+              <div style={{ padding: 14, textAlign: 'center' }}><Loader2 size={16} className="fc-spin" color={accent} /></div>
+            ) : results.length === 0 ? (
+              <div style={{ padding: 12, fontSize: 12, color: '#9ca3af' }}>No saved location matches.</div>
+            ) : (
+              results.map((loc, i) => (
+                <button
+                  key={loc.id}
+                  type="button"
+                  onClick={() => pickSaved(loc)}
+                  style={{
+                    width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 1,
+                    padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                    borderTop: i === 0 ? 'none' : '1px solid #f4f5f6',
+                  }}
+                >
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0f1117' }}>{loc.name}</span>
+                  <span style={{ fontSize: 11, color: '#9ca3af' }}>{loc.address}</span>
+                </button>
+              ))
+            )}
+            {query.trim() && (
+              <button
+                type="button"
+                onClick={useTyped}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '8px 12px', border: 'none', borderTop: '1px solid #f4f5f6',
+                  background: '#fafbfc', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: accent,
+                }}
+              >
+                Use "{query.trim()}" as a typed address (no map pin)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    Off-book job modal
 ═══════════════════════════════════════════════════════════════════════ */
-function AddManualJobModal({ onClose, onSubmit, submitting }) {
+function AddManualJobModal({ onClose, onSubmit, submitting, locations, loadingLocations }) {
   const [pasteText, setPasteText] = useState('');
   const [form, setForm] = useState({
-    customerName: '', customerPhone: '', pickupAddress: '', destinationAddress: '',
+    customerName: '', customerPhone: '',
+    pickup: { address: '', latitude: null, longitude: null, custom: false },
+    destination: { address: '', latitude: null, longitude: null, custom: false },
     amount: '', paymentMethod: 'CASH', itemDescription: '',
   });
   const [error, setError] = useState('');
@@ -203,8 +347,8 @@ function AddManualJobModal({ onClose, onSubmit, submitting }) {
       ...f,
       customerName: p.customerName || f.customerName,
       customerPhone: p.customerPhone || f.customerPhone,
-      pickupAddress: p.pickupAddress || f.pickupAddress,
-      destinationAddress: p.destinationAddress || f.destinationAddress,
+      pickup: p.pickupAddress ? { address: p.pickupAddress, latitude: null, longitude: null, custom: true } : f.pickup,
+      destination: p.destinationAddress ? { address: p.destinationAddress, latitude: null, longitude: null, custom: true } : f.destination,
       amount: p.amount || f.amount,
     }));
     setParsed(true);
@@ -212,12 +356,25 @@ function AddManualJobModal({ onClose, onSubmit, submitting }) {
   };
 
   const handleSubmit = () => {
-    if (!form.pickupAddress.trim() || !form.destinationAddress.trim()) {
+    if (!form.pickup.address.trim() || !form.destination.address.trim()) {
       setError('Pickup and destination addresses are both required.');
       return;
     }
     setError('');
-    onSubmit({ ...form, amount: form.amount ? Number(form.amount) : 0, rawNote: pasteText || undefined });
+    onSubmit({
+      customerName: form.customerName,
+      customerPhone: form.customerPhone,
+      pickupAddress: form.pickup.address,
+      pickupLatitude: form.pickup.latitude ?? undefined,
+      pickupLongitude: form.pickup.longitude ?? undefined,
+      destinationAddress: form.destination.address,
+      destinationLatitude: form.destination.latitude ?? undefined,
+      destinationLongitude: form.destination.longitude ?? undefined,
+      amount: form.amount ? Number(form.amount) : 0,
+      paymentMethod: form.paymentMethod,
+      itemDescription: form.itemDescription,
+      rawNote: pasteText || undefined,
+    });
   };
 
   return (
@@ -265,18 +422,25 @@ function AddManualJobModal({ onClose, onSubmit, submitting }) {
             </div>
           </div>
 
-          <div>
-            <label className="fc-label">Pickup address <span style={{ color: '#dc2626' }}>*</span></label>
-            <input className="fc-field" value={form.pickupAddress}
-              onChange={(e) => setForm({ ...form, pickupAddress: e.target.value })} />
-          </div>
-          <div>
-            <label className="fc-label">Destination address <span style={{ color: '#dc2626' }}>*</span></label>
-            <input className="fc-field" value={form.destinationAddress}
-              onChange={(e) => setForm({ ...form, destinationAddress: e.target.value })} />
-          </div>
+          <AddressPicker
+            label={<>Pickup address <span style={{ color: '#dc2626' }}>*</span></>}
+            value={form.pickup}
+            locations={locations}
+            loadingLocations={loadingLocations}
+            accent="#10b981"
+            onChange={(v) => setForm((f) => ({ ...f, pickup: v }))}
+          />
+          <div style={{ height: 12 }} />
+          <AddressPicker
+            label={<>Destination address <span style={{ color: '#dc2626' }}>*</span></>}
+            value={form.destination}
+            locations={locations}
+            loadingLocations={loadingLocations}
+            accent="#ef4444"
+            onChange={(v) => setForm((f) => ({ ...f, destination: v }))}
+          />
 
-          <div className="fc-grid2">
+          <div className="fc-grid2" style={{ marginTop: 14 }}>
             <div>
               <label className="fc-label">Amount (GHS)</label>
               <input className="fc-field" type="number" value={form.amount}
@@ -321,7 +485,7 @@ function AddManualJobModal({ onClose, onSubmit, submitting }) {
 /* ═══════════════════════════════════════════════════════════════════════
    Main
 ═══════════════════════════════════════════════════════════════════════ */
-export function LiveRiderMap({ authFetch, theme, assignUrl }) {
+export function LiveRiderMap({ authFetch, theme, assignUrl, statusUrl }) {
   const { on } = useSocket();
 
   const [data, setData] = useState(null);
@@ -340,9 +504,13 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
   const [legendOpen, setLegendOpen] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [assigning, setAssigning] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null);
   const [notice, setNotice] = useState(null);
   const [showAddManual, setShowAddManual] = useState(false);
   const [addingManual, setAddingManual] = useState(false);
+
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
 
   const mapRef = useRef(null);
   const fittedRef = useRef(false);
@@ -394,6 +562,23 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
     const timer = setInterval(() => load(true), POLL_MS);
     return () => clearInterval(timer);
   }, [load]);
+
+  /* ── Saved locations, for the off-book job address pickers ── */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingLocations(true);
+      try {
+        const res = await authFetch('/locations');
+        const json = await res.json();
+        if (!cancelled && json.success) setLocations(json.data.locations ?? json.data);
+      } catch {
+        // silently falls back to typed addresses only
+      }
+      if (!cancelled) setLoadingLocations(false);
+    })();
+    return () => { cancelled = true; };
+  }, [authFetch]);
 
   /* ── Live patches between polls ── */
   useEffect(() => {
@@ -577,6 +762,36 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
     }
     setAssigning(null);
   }, [authFetch, assignUrl, load, clearSelection]);
+
+  /* ── Status updates — works for orders, deliveries and off-book jobs ── */
+  const updateJobStatus = useCallback(async (job, newStatus) => {
+    setUpdatingStatus(newStatus);
+    setNotice(null);
+    const url = statusUrl
+      ? statusUrl(job, newStatus)
+      : job.kind === 'order'
+        ? `/admin/orders/${job.id}/status`
+        : job.kind === 'manual'
+          ? `/admin/manual-jobs/${job.id}/status`
+          : `/admin/deliveries/${job.id}/status`;
+    try {
+      const res = await authFetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success !== false) {
+        setNotice({ tone: 'ok', text: `${job.label} marked "${statusOf(newStatus).label}".` });
+        await load(true);
+      } else {
+        setNotice({ tone: 'error', text: json.message || 'Could not update that status. Try again.' });
+      }
+    } catch {
+      setNotice({ tone: 'error', text: 'Status update failed — check the connection and try again.' });
+    }
+    setUpdatingStatus(null);
+  }, [authFetch, statusUrl, load]);
 
   /* ── Off-book job creation ── */
   const submitManualJob = useCallback(async (payload) => {
@@ -1016,6 +1231,41 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
                 )}
               </div>
             </div>
+
+            {/* ── Status update — same control for orders, deliveries and off-book jobs ── */}
+            <div className="fc-detail-foot">
+              <div className="fc-detail-foot-title">Update status</div>
+              {nextStatusesFor(selectedJob).length === 0 ? (
+                <div style={{ fontSize: 11.5, color: '#9ca3af', lineHeight: 1.6 }}>
+                  {selectedJob.status === 'DELIVERED' || selectedJob.status === 'CANCELLED'
+                    ? 'This job is closed.'
+                    : 'No further status change available.'}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                  {nextStatusesFor(selectedJob).map((s) => {
+                    const needsRider = RIDER_REQUIRED_STATUSES.includes(s) && !selectedJob.riderId;
+                    const meta = statusOf(s);
+                    return (
+                      <button
+                        key={s}
+                        className="fc-status-btn"
+                        style={{ '--fc-c': meta.color }}
+                        disabled={needsRider || updatingStatus === s}
+                        title={needsRider ? 'Assign a rider first' : undefined}
+                        onClick={() => updateJobStatus(selectedJob, s)}
+                      >
+                        {updatingStatus === s
+                          ? <Loader2 size={11} className="fc-spin" />
+                          : s === 'CANCELLED' ? <X size={11} /> : <CheckCircle2 size={11} />}
+                        {s === 'CANCELLED' ? 'Cancel' : `Mark ${meta.label}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="fc-detail-foot">
               <div className="fc-detail-foot-title">
                 {selectedJob.unassigned ? 'Closest free riders' : 'Reassign to'}
@@ -1072,6 +1322,8 @@ export function LiveRiderMap({ authFetch, theme, assignUrl }) {
           onClose={() => setShowAddManual(false)}
           onSubmit={submitManualJob}
           submitting={addingManual}
+          locations={locations}
+          loadingLocations={loadingLocations}
         />
       )}
 
@@ -1274,6 +1526,14 @@ function FcStyles() {
 .fc-tel:hover { text-decoration:underline; }
 .fc-detail-foot { border-top:1px solid #f4f5f6; padding:11px 15px 15px; }
 .fc-detail-foot-title { font-size:11.5px; font-weight:800; color:#0f1117; margin-bottom:9px; }
+.fc-status-btn {
+  display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:999px;
+  border:1.5px solid var(--fc-c); background:color-mix(in srgb, var(--fc-c) 10%, #fff);
+  color:var(--fc-c); font-size:11px; font-weight:800; cursor:pointer; font-family:inherit;
+  transition:all .15s ease;
+}
+.fc-status-btn:hover:not(:disabled) { background:var(--fc-c); color:#fff; }
+.fc-status-btn:disabled { opacity:.4; cursor:not-allowed; }
 .fc-near {
   display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid #fafafa;
 }

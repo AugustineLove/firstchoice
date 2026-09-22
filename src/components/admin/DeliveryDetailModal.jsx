@@ -108,6 +108,20 @@ function RouteCard({ pickupAddress, destinationAddress }) {
   );
 }
 
+/* Errand items can come back either as plain strings (legacy data) or as
+   { text, estimatedPrice } objects (what the booking form actually sends
+   today) — normalize before rendering so React never gets a raw object. */
+function ErrandItemRow({ item }) {
+  const text = typeof item === 'string' ? item : item?.text;
+  const price = typeof item === 'object' && item !== null ? Number(item.estimatedPrice) || 0 : 0;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: '#374151' }}>
+      <span>• {text || '—'}</span>
+      {price > 0 && <span style={{ color: '#9ca3af', fontWeight: 600, flexShrink: 0 }}>{fmtGHS(price)}</span>}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════
    DELIVERY DETAIL MODAL
 ═══════════════════════════════════════════════ */
@@ -246,7 +260,7 @@ export function DeliveryDetailModal({ deliveryId, authFetch, theme, riders, onCl
                   {delivery.errandItems?.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {delivery.errandItems.map((it, i) => (
-                        <div key={i} style={{ fontSize: 13, color: '#374151' }}>• {it}</div>
+                        <ErrandItemRow key={i} item={it} />
                       ))}
                     </div>
                   ) : (
