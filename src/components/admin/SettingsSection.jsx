@@ -98,6 +98,7 @@ export function SettingsSection({ authFetch, theme }) {
           <PricingModeCard active={pricingMode==='PER_ITEM'} onClick={() => setPricingMode('PER_ITEM')} theme={theme}
             title="Per-item price" desc="Charge a fee for each item line the customer adds to the errand list." />
         </div>
+        
 
         {pricingMode === 'FIXED' ? (
           <FormField label="Fixed errand price (GHS)">
@@ -130,9 +131,102 @@ export function SettingsSection({ authFetch, theme }) {
           {saving ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving...</> : 'Save Settings'}
         </button>
       </div>
+
+      <StoreStatusCard authFetch={authFetch} theme={theme}/>
         <OperatingHoursCard authFetch={authFetch} theme={theme}/>
       
     </div>
   );
 }
 
+
+function StoreStatusCard({ authFetch, theme }) {
+  const [isClosed, setIsClosed] = useState(false);
+  const [closedMessage, setClosedMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await authFetch('/admin/settings');
+        const json = await res.json();
+        if (json.success) {
+          setIsClosed(!!json.data.isClosed);
+          setClosedMessage(json.data.closedMessage || '');
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, [authFetch]);
+
+  async function save(nextClosed) {
+    setSaving(true); setError(null); setSaved(false);
+    try {
+      const res = await authFetch('/settings/closing-status', {
+        method: 'PATCH',
+        body: JSON.stringify({ isClosed: nextClosed, closedMessage: closedMessage || null }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Could not update status');
+      setIsClosed(nextClosed);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setError(e.message || 'Something went wrong.');
+    }
+    setSaving(false);
+  }
+
+  if (loading) return null;
+
+  return (
+    <div style={{ background:'#fff', borderRadius:14, border:'1px solid #f0f0f0', padding:'22px 24px', marginBottom:20, maxWidth:640 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+        <div>
+          <h3 style={{ fontSize:15, fontWeight:800, color:'#0f1117', margin:'0 0 4px' }}>Store Status</h3>
+          <p style={{ fontSize:12, color:'#9ca3af', margin:0 }}>
+            Manually close ordering even during working hours — rider shortage, restocking, bad weather, etc.
+          </p>
+        </div>
+        <button
+          onClick={() => save(!isClosed)}
+          disabled={saving}
+          style={{
+            border:'none', borderRadius:20, padding:'8px 16px', fontWeight:800, fontSize:12, fontFamily:'inherit',
+            background: isClosed ? '#fee2e2' : '#f0fdf4', color: isClosed ? '#16a34a' : '#dc2626',
+            cursor: saving ? 'not-allowed' : 'pointer', whiteSpace:'nowrap',
+          }}
+        >
+          {isClosed ? 'Closed, tap to reopen' : 'Open, tap to close'}
+        </button>
+      </div>
+
+      <div style={{ marginTop:16 }}>
+        <FormField label="Message shown to customers while closed">
+          <textarea
+            style={{ ...fieldStyle, height:70, resize:'vertical', paddingTop:10 }}
+            value={closedMessage}
+            onChange={e => setClosedMessage(e.target.value)}
+            placeholder="We're closed for maintenance — back online by 3pm today."
+          />
+        </FormField>
+        <button
+          onClick={() => save(isClosed)}
+          disabled={saving}
+          style={{
+            marginTop:8, height:38, padding:'0 18px', border:'none', borderRadius:10, fontWeight:800, fontSize:13, fontFamily:'inherit',
+            background: saving ? '#d1d5db' : theme.green, color:'#fff', cursor: saving ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {saving ? 'Saving...' : 'Save Message'}
+        </button>
+      </div>
+
+      {error && <div style={{ background:'#fef2f2', color:'#dc2626', borderRadius:8, padding:'10px 14px', fontSize:13, marginTop:10 }}>{error}</div>}
+      {saved && <div style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:8, padding:'10px 14px', fontSize:13, marginTop:10 }}>Updated.</div>}
+    </div>
+  );
+}
