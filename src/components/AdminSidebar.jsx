@@ -13,6 +13,7 @@ const NAV = [
   { section: 'System' },
   { id: 'analytics',  label: 'Analytics',       icon: '📈', badge: null },
   { id: 'settings',   label: 'Settings',        icon: '⚙️', badge: null },
+  { id: 'password', label: 'Reset Password', icon: '🔑', badge: null },
 ]
 
 export default function AdminSidebar({ activeTab, setActiveTab }) {

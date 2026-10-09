@@ -12,6 +12,7 @@ import {
   DollarSign,
   AlertTriangle,
   MapPin,
+  Key,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -36,6 +37,7 @@ import { NotificationBell } from '../../components/admin/NotificationBell';
 import { ActivityLogSection } from '../../components/admin/Activitylogsection';
 import { LiveRiderMap } from '../../components/admin/LiveRiderMap';
 import { GlobalSearch } from '../../components/admin/GlobalSearch';
+import AdminResetPassword from '../customer/AdminResetPassword';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -559,6 +561,7 @@ const NAV_ITEMS = [
   { id:'broadcast', label:'Broadcast', icon:<Megaphone size={18}/> },
   { id: 'activity', label: 'Activity Log', icon: <ClipboardList size={18}/> },
   { id: 'live', label: 'Live Map', icon: <MapPin size={18}/> },
+  { id: 'password', label: 'Reset Password', icon: <Key size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -604,6 +607,7 @@ export default function AdminDashboard() {
     broadcast: <BroadcastSection authFetch={authFetch} theme={theme}/>,
     activity: <ActivityLogSection authFetch={authFetch} theme={theme}/>,
     live: <LiveRiderMap authFetch={authFetch} theme={theme}/>,
+    password: <AdminResetPassword authFetch={authFetch} theme={theme}/>,
   };
 
   return (
