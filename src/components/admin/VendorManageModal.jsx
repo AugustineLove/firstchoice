@@ -6,8 +6,76 @@ import {
   Store, ShoppingBag, Package, DollarSign, CheckCircle, RefreshCw,
   ChevronDown, ChevronUp, Timer, Flame, Droplets, Weight, Hash,
   Smartphone, Pill, XCircle, LayoutDashboard,
+  Upload, MapPin, Clock, Copy, Navigation, ExternalLink,
 } from 'lucide-react';
-import { fieldStyle, fmtGHS, StatCard, StatusBadge, Table } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, StatCard, StatusBadge, Table, } from '../../pages/public/AdminDashboard';
+
+
+const CLOUDINARY_CLOUD_NAME = import.meta?.env?.VITE_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME';
+const CLOUDINARY_UPLOAD_PRESET = import.meta?.env?.VITE_CLOUDINARY_UPLOAD_PRESET || 'firstchoice_unsigned';
+
+// Vendor app's business types (the admin CATEGORIES list is product-only and shorter)
+const BUSINESS_TYPES = ['Food','Grocery','Pharmacy','Boutique','Electronics','Drinks','Other','Cosmetics','Clothing','Services'];
+const DAY_LABELS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DEFAULT_RANGE = { start:'08:00', end:'20:00' };
+
+const emptyWeek = () => Object.fromEntries([0,1,2,3,4,5,6].map(i => [String(i), []]));
+
+function normalizeHours(raw) {
+  const week = emptyWeek();
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return week; // legacy strings → empty
+  for (const [k, v] of Object.entries(raw)) {
+    if (!(k in week) || !Array.isArray(v)) continue;
+    week[k] = v
+      .filter(r => r && typeof r.start === 'string' && typeof r.end === 'string')
+      .map(r => ({ start: r.start, end: r.end }));
+  }
+  return week;
+}
+
+function validateHours(week) {
+  for (let i = 0; i < 7; i++) {
+    for (const r of week[String(i)]) {
+      if (!r.start || !r.end) return `${DAY_LABELS[i]}: set both opening and closing time`;
+      if (r.start >= r.end)   return `${DAY_LABELS[i]}: opening time must be before closing time`;
+    }
+  }
+  return null;
+}
+
+async function uploadToCloudinary(file, folder) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  if (folder) fd.append('folder', folder);
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_UPLOAD_PRESET}/image/upload`, { method:'POST', body: fd });
+  const json = await res.json();
+  if (!res.ok || !json.secure_url) throw new Error(json.error?.message || 'Image upload failed');
+  return json.secure_url;
+}
+
+// Accepts "5.6037, -0.1870" or a Google Maps URL containing @lat,lng / q=lat,lng
+function parseCoords(text) {
+  const m = String(text || '').match(/(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+  if (!m) return null;
+  const lat = Number(m[1]), lng = Number(m[2]);
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat: String(lat), lng: String(lng) };
+}
+
+function Switch({ checked, onChange }) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)}
+      style={{ width:40, height:22, borderRadius:50, border:'none', cursor:'pointer', padding:2, background: checked ? '#16a34a' : '#d1d5db', transition:'background .2s', display:'flex', justifyContent: checked ? 'flex-end' : 'flex-start' }}>
+      <span style={{ width:18, height:18, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 3px rgba(0,0,0,.25)' }}/>
+    </button>
+  );
+}
+
+const cardStyle = { background:'#fff', borderRadius:12, border:'1px solid #f0f0f0', padding:16 };
+const timeInput = { height:34, padding:'0 8px', border:'1.5px solid #e5e7eb', borderRadius:8, fontSize:13, fontFamily:'inherit', outline:'none', background:'#f9fafb' };
+
+
 
 /* ══════════════════════════════════════════
    CONSTANTS (mirrors the vendor app's product taxonomy)
@@ -648,65 +716,272 @@ function AdminVendorOrders({ vendorId, authFetch, theme }) {
    TAB: PROFILE (admin-editable business info)
 ══════════════════════════════════════════ */
 function AdminVendorProfile({ vendor, vendorId, authFetch, theme, onUpdated }) {
-  const [form, setForm]     = useState({ businessName:'', businessType:'Food', address:'', phone:'', logo:'', openingHours:'' });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved]   = useState(false);
+  const [form, setForm]   = useState({ businessName:'', businessType:'Food', address:'', phone:'', logo:'' });
+  const [hours, setHours] = useState(emptyWeek());
+  const [lat, setLat]     = useState('');
+  const [lng, setLng]     = useState('');
+  const [coordPaste, setCoordPaste] = useState('');
+
+  const [saving, setSaving]       = useState(false);
+  const [saved, setSaved]         = useState(false);
+  const [error, setError]         = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [locating, setLocating]   = useState(false);
 
   useEffect(() => {
     if (!vendor) return;
     setForm({
-      businessName: vendor.businessName || '', businessType: vendor.businessType || 'Food',
-      address: vendor.address || '', phone: vendor.phone || vendor.user?.phone || '',
-      logo: vendor.logo || '', openingHours: vendor.openingHours || '',
+      businessName: vendor.businessName || '',
+      businessType: vendor.businessType || 'Food',
+      address: vendor.address || '',
+      phone: vendor.phone || vendor.user?.phone || '',
+      logo: vendor.logo || '',
     });
+    setHours(normalizeHours(vendor.openingHours));
+    setLat(vendor.latitude || '');
+    setLng(vendor.longitude || '');
   }, [vendor]);
 
-  const set = (k,v) => setForm(f => ({...f,[k]:v}));
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const hasLocation = lat !== '' && lng !== '';
 
+  /* ── Logo upload ── */
+  async function handleLogoFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return setError('Please choose an image file');
+    if (file.size > 5 * 1024 * 1024)     return setError('Logo must be under 5MB');
+    setError(null);
+    setUploading(true);
+    try {
+      set('logo', await uploadToCloudinary(file, 'firstchoice/vendor_logos'));
+    } catch (err) {
+      setError(err.message);
+    }
+    setUploading(false);
+  }
+
+  /* ── Hours helpers ── */
+  const toggleDay   = (d, open) => setHours(h => ({ ...h, [d]: open ? [{ ...DEFAULT_RANGE }] : [] }));
+  const addRange    = d => setHours(h => ({ ...h, [d]: [...h[d], { ...DEFAULT_RANGE }] }));
+  const removeRange = (d, i) => setHours(h => ({ ...h, [d]: h[d].filter((_, idx) => idx !== i) }));
+  const setTime     = (d, i, field, val) =>
+    setHours(h => ({ ...h, [d]: h[d].map((r, idx) => idx === i ? { ...r, [field]: val } : r) }));
+  const copyToAll   = d =>
+    setHours(h => Object.fromEntries(Object.keys(h).map(k => [k, h[d].map(r => ({ ...r }))])));
+
+  /* ── Location helpers ── */
+  function useMyLocation() {
+    if (!navigator.geolocation) return setError('Geolocation is not supported by this browser');
+    setLocating(true); setError(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => { setLat(String(pos.coords.latitude)); setLng(String(pos.coords.longitude)); setLocating(false); },
+      err => { setError(err.code === 1 ? 'Location permission denied' : 'Could not get your location'); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+  function applyPasted() {
+    const c = parseCoords(coordPaste);
+    if (!c) return setError('Could not read coordinates. Paste "lat, lng" or a full Google Maps link (short maps.app.goo.gl links won\'t work — open them first and copy the full URL).');
+    setError(null); setLat(c.lat); setLng(c.lng); setCoordPaste('');
+  }
+  function clearLocation() { setLat(''); setLng(''); }
+
+  /* ── Save ── */
   async function save() {
+    setError(null);
+    if (!form.businessName.trim()) return setError('Business name is required');
+    const hErr = validateHours(hours);
+    if (hErr) return setError(hErr);
+
+    const hasLat = lat !== '', hasLng = lng !== '';
+    if (hasLat !== hasLng) return setError('Set both latitude and longitude, or clear both');
+    if (hasLat) {
+      const la = Number(lat), lo = Number(lng);
+      if (!Number.isFinite(la) || la < -90 || la > 90)    return setError('Latitude must be between -90 and 90');
+      if (!Number.isFinite(lo) || lo < -180 || lo > 180)  return setError('Longitude must be between -180 and 180');
+    }
+
     setSaving(true);
     try {
-      const res  = await authFetch(`/admin/vendors/${vendorId}`, { method:'PATCH', body: JSON.stringify(form) });
+      const res = await authFetch(`/admin/vendors/${vendorId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          businessName: form.businessName.trim(),
+          businessType: form.businessType,
+          address: form.address.trim(),
+          phone: form.phone.trim(),
+          logo: form.logo,
+          openingHours: hours,
+          latitude:  hasLat ? String(Number(lat)) : null,
+          longitude: hasLng ? String(Number(lng)) : null,
+        }),
+      });
       const json = await res.json();
-      if (json.success) { onUpdated?.(json.data); setSaved(true); setTimeout(() => setSaved(false), 3000); }
-    } catch {}
+      if (!json.success) throw new Error(json.message || 'Could not save profile');
+      onUpdated?.(json.data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e.message || 'Something went wrong');
+    }
     setSaving(false);
   }
 
   return (
-    <div>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      {error && (
+        <div style={{ padding:'10px 14px', borderRadius:10, background:'#fef2f2', border:'1px solid #fecaca', color:'#b91c1c', fontSize:13, fontWeight:600 }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-        <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f0f0f0', padding:16, display:'flex', flexDirection:'column', gap:12 }}>
-          <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-            <div style={{ width:56, height:56, borderRadius:12, border:'1.5px solid #e5e7eb', overflow:'hidden', flexShrink:0, background:'#f9fafb', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              {form.logo ? <img src={form.logo} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e=>e.target.style.display='none'}/> : <Store size={22} style={{ color:'#d1d5db' }}/>}
+        {/* Logo + business info */}
+        <div style={{ ...cardStyle, display:'flex', flexDirection:'column', gap:14 }}>
+          <div style={{ display:'flex', gap:14, alignItems:'center' }}>
+            <div style={{ width:72, height:72, borderRadius:14, border:'1.5px solid #e5e7eb', overflow:'hidden', flexShrink:0, background:'#f9fafb', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+              {form.logo
+                ? <img src={form.logo} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e => e.target.style.display='none'}/>
+                : <Store size={26} style={{ color:'#d1d5db' }}/>}
+              {uploading && (
+                <div style={{ position:'absolute', inset:0, background:'rgba(255,255,255,.75)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Loader2 size={20} style={{ animation:'spin 1s linear infinite', color:'#16a34a' }}/>
+                </div>
+              )}
             </div>
             <div style={{ flex:1 }}>
-              <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#374151', marginBottom:5 }}>Logo URL</label>
-              <input value={form.logo} onChange={e=>set('logo',e.target.value)} placeholder="https://..."
-                style={{ width:'100%', height:34, padding:'0 10px', border:'1.5px solid #e5e7eb', borderRadius:7, fontSize:12, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}/>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <label style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'7px 12px', borderRadius:8, border:'1.5px solid #16a34a', color:'#16a34a', fontSize:12, fontWeight:700, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? .6 : 1 }}>
+                  <Upload size={13}/> {form.logo ? 'Change logo' : 'Upload logo'}
+                  <input type="file" accept="image/*" onChange={handleLogoFile} disabled={uploading} style={{ display:'none' }}/>
+                </label>
+                {form.logo && (
+                  <button type="button" onClick={() => set('logo','')}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'7px 12px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                    <Trash2 size={12}/> Remove
+                  </button>
+                )}
+              </div>
+              <p style={{ margin:'6px 0 0', fontSize:11, color:'#9ca3af' }}>Square image, min 200×200px, max 5MB</p>
             </div>
           </div>
-          <FInput label="Business Name" value={form.businessName} onChange={v=>set('businessName',v)} required placeholder="e.g. Akosua Kitchen"/>
+
+          <FInput label="Business Name" value={form.businessName} onChange={v => set('businessName', v)} required placeholder="e.g. Akosua Kitchen"/>
           <div>
             <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Business Type</label>
-            <select value={form.businessType} onChange={e=>set('businessType',e.target.value)}
+            <select value={form.businessType} onChange={e => set('businessType', e.target.value)}
               style={{ width:'100%', height:40, padding:'0 12px', border:'1.5px solid #e5e7eb', borderRadius:9, fontSize:13, outline:'none', background:'#fff', fontFamily:'inherit', cursor:'pointer' }}>
-              {CATEGORIES.map(t => <option key={t} value={t}>{CATEGORY_ICONS[t]} {t}</option>)}
+              {BUSINESS_TYPES.map(t => <option key={t} value={t}>{CATEGORY_ICONS[t] || '🏪'} {t}</option>)}
             </select>
           </div>
         </div>
 
-        <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f0f0f0', padding:16, display:'flex', flexDirection:'column', gap:12 }}>
-          <FInput label="Phone Number" value={form.phone} onChange={v=>set('phone',v)} placeholder="0241234567"/>
-          <FInput label="Address" value={form.address} onChange={v=>set('address',v)} placeholder="e.g. Market Street, Agona Nkwanta" textarea rows={2}/>
-          {/* <FInput label="Opening Hours" value={form.openingHours} onChange={v=>set('openingHours',v)} placeholder="e.g. Mon-Sat 7am-9pm"/> */}
+        {/* Contact */}
+        <div style={{ ...cardStyle, display:'flex', flexDirection:'column', gap:12 }}>
+          <FInput label="Phone Number" value={form.phone} onChange={v => set('phone', v)} placeholder="0241234567"/>
+          <FInput label="Address" value={form.address} onChange={v => set('address', v)} placeholder="e.g. Market Street, Agona Nkwanta" textarea rows={3}/>
         </div>
       </div>
 
-      <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:12 }}>
-        <button onClick={save} disabled={saving}
-          style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 22px', borderRadius:10, border:'none', background:`linear-gradient(135deg,${theme.green},${theme.greenMid})`, color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>
+      {/* Opening hours */}
+      <ModalSection icon={<Clock size={15}/>} title="Opening Hours"
+        subtitle='Customers see the store as "Open" or "Closed" based on this schedule.'>
+        <div>
+          {DAY_LABELS.map((label, i) => {
+            const d = String(i);
+            const ranges = hours[d];
+            const open = ranges.length > 0;
+            return (
+              <div key={d} style={{ padding:'10px 0', borderBottom: i < 6 ? '1px solid #f3f4f6' : 'none' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:92, fontSize:13, fontWeight:700, color:'#0f1117' }}>{label}</div>
+                  <Switch checked={open} onChange={v => toggleDay(d, v)}/>
+                  {!open && <span style={{ fontSize:13, color:'#9ca3af' }}>Closed</span>}
+                  {open && (
+                    <button type="button" onClick={() => copyToAll(d)} title="Copy to all days"
+                      style={{ display:'inline-flex', alignItems:'center', gap:5, background:'none', border:'none', cursor:'pointer', color:'#6b7280', fontSize:12, fontWeight:600, fontFamily:'inherit' }}>
+                      <Copy size={13}/> Copy to all days
+                    </button>
+                  )}
+                </div>
+
+                {open && (
+                  <div style={{ marginLeft:104, marginTop:8, display:'flex', flexDirection:'column', gap:6 }}>
+                    {ranges.map((r, ri) => (
+                      <div key={ri} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <input type="time" value={r.start} onChange={e => setTime(d, ri, 'start', e.target.value)} style={timeInput}/>
+                        <span style={{ color:'#9ca3af' }}>–</span>
+                        <input type="time" value={r.end} onChange={e => setTime(d, ri, 'end', e.target.value)} style={timeInput}/>
+                        {ranges.length > 1 && (
+                          <button type="button" onClick={() => removeRange(d, ri)}
+                            style={{ background:'none', border:'none', cursor:'pointer', color:'#9ca3af', padding:4 }}><X size={14}/></button>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => addRange(d)}
+                      style={{ alignSelf:'flex-start', display:'inline-flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', color:'#16a34a', fontSize:12, fontWeight:600, padding:'2px 0', fontFamily:'inherit' }}>
+                      <Plus size={13}/> Add another range
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </ModalSection>
+
+      {/* Location */}
+      <ModalSection icon={<MapPin size={15}/>} title="Store Location"
+        subtitle="This GPS pin is used for directions and delivery fee calculation.">
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <FInput label="Latitude"  value={lat} onChange={setLat} placeholder="e.g. 4.8836"  hint="-90 to 90"/>
+            <FInput label="Longitude" value={lng} onChange={setLng} placeholder="e.g. -1.9355" hint="-180 to 180"/>
+          </div>
+
+          <div>
+            <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#374151', marginBottom:5 }}>Paste coordinates or Google Maps link</label>
+            <div style={{ display:'flex', gap:8 }}>
+              <input value={coordPaste} onChange={e => setCoordPaste(e.target.value)} placeholder="4.8836, -1.9355  or  https://www.google.com/maps/@4.88,-1.93,17z"
+                style={{ flex:1, height:38, padding:'0 12px', border:'1.5px solid #e5e7eb', borderRadius:8, fontSize:13, outline:'none', fontFamily:'inherit' }}/>
+              <button type="button" onClick={applyPasted} disabled={!coordPaste.trim()}
+                style={{ padding:'0 16px', borderRadius:8, border:'none', background: coordPaste.trim() ? '#16a34a' : '#e5e7eb', color: coordPaste.trim() ? '#fff' : '#9ca3af', fontWeight:700, fontSize:12, cursor: coordPaste.trim() ? 'pointer' : 'not-allowed', fontFamily:'inherit' }}>
+                Apply
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <button type="button" onClick={useMyLocation} disabled={locating}
+              style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:8, border:'1.5px solid #16a34a', background:'#fff', color:'#16a34a', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
+              {locating ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Navigation size={13}/>}
+              {locating ? 'Getting location…' : 'Use my current location'}
+            </button>
+            {hasLocation && (
+              <>
+                <a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer"
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:8, border:'1px solid #e5e7eb', background:'#fff', color:'#374151', fontWeight:700, fontSize:12, textDecoration:'none' }}>
+                  <ExternalLink size={13}/> Verify on Google Maps
+                </a>
+                <button type="button" onClick={clearLocation}
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:8, border:'1px solid #fecaca', background:'#fef2f2', color:'#dc2626', fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
+                  <Trash2 size={12}/> Clear
+                </button>
+              </>
+            )}
+          </div>
+          <p style={{ margin:0, fontSize:11, color:'#9ca3af' }}>
+            "Use my current location" uses <em>your</em> device's GPS, so only use it if you're at the store. Otherwise paste a Google Maps link.
+          </p>
+        </div>
+      </ModalSection>
+
+      {/* Save */}
+      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+        <button onClick={save} disabled={saving || uploading}
+          style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 22px', borderRadius:10, border:'none', background:`linear-gradient(135deg,${theme.green},${theme.greenMid})`, color:'#fff', fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit', opacity:(saving||uploading)?.7:1 }}>
           {saving ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Save size={14}/>}
           {saving ? 'Saving...' : 'Save Profile'}
         </button>
