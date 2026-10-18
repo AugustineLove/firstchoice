@@ -22,6 +22,26 @@ if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
   console.error('Cloudinary environment variables are missing.');
 }
 
+
+const SUBTYPES = {
+  TRICYCLE: [
+    { value: 'PRAGIA', label: 'Pragia', emoji: '🛺', hint: 'Passengers' },
+    { value: 'ABOBOYAA', label: 'Aboboyaa', emoji: '📦', hint: 'Goods & loads' },
+  ],
+};
+const SUBTYPE = Object.fromEntries(Object.values(SUBTYPES).flat().map((s) => [s.value, s]));
+const needsKind = (d) => !!SUBTYPES[d.vehicleType] && !d.subType;
+ 
+function KindPill({ subType }) {
+  const s = SUBTYPE[subType];
+  if (!s) return null;
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 50, background: '#f0fdf4', color: '#16a34a', whiteSpace: 'nowrap' }}>
+      {s.emoji} {s.label}
+    </span>
+  );
+}
+
 async function uploadToCloudinary(file, folder) {
   const fd = new FormData();
   fd.append('file', file);
@@ -371,10 +391,13 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
   const [f, setF] = useState({
     name: editing?.name || '',
     phone: editing?.phone || '',
+    whatsapp: editing?.whatsapp || '',
     photo: editing?.photo || '',
     vehicleType: editing?.vehicleType || 'TRICYCLE',
+    subType: editing?.subType || '',
     vehicleDescription: editing?.vehicleDescription || '',
     plateNumber: editing?.plateNumber || '',
+    area: editing?.area || '',
     verified: editing?.verified || false,
     status: editing?.status || 'ACTIVE',
   });
@@ -382,8 +405,13 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const valid = f.name.trim() && f.phone.trim();
-
+ 
+  const kinds = SUBTYPES[f.vehicleType] || null;
+  // Changing the vehicle type clears the kind (a taxi can't be a Pragia).
+  const setVehicle = (v) => setF((p) => ({ ...p, vehicleType: v, subType: '' }));
+  const needsKindPick = !!kinds && !f.subType;
+  const valid = f.name.trim() && f.phone.trim() && !needsKindPick;
+ 
   async function handlePhoto(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -396,16 +424,24 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
     catch (err) { setError(err.message); }
     setUploading(false);
   }
-
+ 
   async function save() {
     if (!valid) return;
     setSaving(true);
     setError(null);
     try {
       const payload = {
-        name: f.name.trim(), phone: f.phone.trim(), photo: f.photo || null, vehicleType: f.vehicleType,
-        vehicleDescription: f.vehicleDescription.trim() || null, plateNumber: f.plateNumber.trim() || null,
-        verified: f.verified, status: f.status,
+        name: f.name.trim(),
+        phone: f.phone.trim(),
+        whatsapp: f.whatsapp.trim() || null,
+        photo: f.photo || null,
+        vehicleType: f.vehicleType,
+        subType: kinds ? f.subType : null,
+        vehicleDescription: f.vehicleDescription.trim() || null,
+        plateNumber: f.plateNumber.trim() || null,
+        area: f.area.trim() || null,
+        verified: f.verified,
+        status: f.status,
       };
       await call(authFetch, editing ? `/admin/drivers/${editing.id}` : '/admin/drivers', editing ? 'PATCH' : 'POST', payload);
       onSaved();
@@ -413,10 +449,11 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
     } catch (e) { setError(e.message || 'Could not save'); }
     setSaving(false);
   }
-
+ 
   return (
-    <ModalShell title={editing ? 'Edit driver' : 'Add driver'} sub="Customers see the name, vehicle and phone once a ride is assigned" onClose={onClose} maxWidth={560}
+    <ModalShell title={editing ? 'Edit driver' : 'Add driver'} sub="Customers see this in “Call a Ride” and can call or WhatsApp directly" onClose={onClose} maxWidth={560}
       footer={<>
+        {needsKindPick && <span style={{ marginRight: 'auto', alignSelf: 'center', fontSize: 12, color: '#f59e0b' }}>⚠ Pick Pragia or Aboboyaa</span>}
         <button onClick={onClose} style={ghostBtn}>Cancel</button>
         <button onClick={save} disabled={saving || uploading || !valid} style={primaryBtn(theme, !!valid)}>
           {saving ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={15} />}
@@ -424,7 +461,7 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
         </button>
       </>}>
       {error && <div style={errBox}>{error}</div>}
-
+ 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <Avatar person={{ name: f.name, photo: f.photo }} size={64} />
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, border: '1.5px solid #16a34a', color: '#16a34a', fontSize: 12, fontWeight: 700, cursor: uploading ? 'not-allowed' : 'pointer' }}>
@@ -437,25 +474,52 @@ function DriverModal({ editing, authFetch, theme, onClose, onSaved }) {
           </button>
         )}
       </div>
-
+ 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label="Full name" required><input style={inputCss} value={f.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Yaw Boateng" /></Field>
-        <Field label="Phone" required><input style={inputCss} value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="0241234567" /></Field>
+        <Field label="Phone" required hint="Customers tap this to call"><input style={inputCss} value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="0241234567" /></Field>
       </div>
-
+ 
+      <Field label="WhatsApp" hint="Leave empty to use the phone number">
+        <input style={inputCss} value={f.whatsapp} onChange={(e) => set('whatsapp', e.target.value)} placeholder="Optional" />
+      </Field>
+ 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Field label="Vehicle type" required>
-          <select style={inputCss} value={f.vehicleType} onChange={(e) => set('vehicleType', e.target.value)}>
+          <select style={inputCss} value={f.vehicleType} onChange={(e) => setVehicle(e.target.value)}>
             {Object.entries(VEHICLES).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
           </select>
         </Field>
         <Field label="Plate number"><input style={inputCss} value={f.plateNumber} onChange={(e) => set('plateNumber', e.target.value)} placeholder="Optional" /></Field>
       </div>
-
-      <Field label="Vehicle description" hint="e.g. Red Aboboyaa, 3-seater"><input style={inputCss} value={f.vehicleDescription} onChange={(e) => set('vehicleDescription', e.target.value)} placeholder="Optional" /></Field>
-
+ 
+      {/* Kind — only for vehicle types that have kinds (Tricycle) */}
+      {kinds && (
+        <Field label="Kind" required hint="Pragia carries passengers, Aboboyaa carries goods. Customers can filter by this.">
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${kinds.length}, 1fr)`, gap: 10 }}>
+            {kinds.map((k) => {
+              const on = f.subType === k.value;
+              return (
+                <button key={k.value} type="button" onClick={() => set('subType', k.value)}
+                  style={{ padding: '12px 10px', borderRadius: 12, border: `2px solid ${on ? '#16a34a' : '#e5e7eb'}`, background: on ? '#f0fdf4' : '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' }}>
+                  <div style={{ fontSize: 22 }}>{k.emoji}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: on ? '#16a34a' : '#374151', marginTop: 2 }}>{k.label}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>{k.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+ 
+      <Field label="Vehicle description" hint="e.g. Red Apsonic, covered, 3-seater"><input style={inputCss} value={f.vehicleDescription} onChange={(e) => set('vehicleDescription', e.target.value)} placeholder="Optional" /></Field>
+ 
+      <Field label="Area" hint="Where they usually operate">
+        <input style={inputCss} value={f.area} onChange={(e) => set('area', e.target.value)} placeholder="e.g. Agona Nkwanta & surroundings" />
+      </Field>
+ 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Visibility" hint="Only “Live” drivers can be assigned rides">
+        <Field label="Visibility" hint="Only “Live” drivers appear in the app and can be assigned rides">
           <select style={inputCss} value={f.status} onChange={(e) => set('status', e.target.value)}>
             <option value="ACTIVE">Live</option>
             <option value="DRAFT">Draft</option>
@@ -478,11 +542,12 @@ function DriversTab({ authFetch, theme }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [typeFilter, setTypeFilter] = useState('');
+  const [kindFilter, setKindFilter] = useState('');   // '' | PRAGIA | ABOBOYAA | NONE
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
   const [actingId, setActingId] = useState(null);
-
+ 
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -492,22 +557,27 @@ function DriversTab({ authFetch, theme }) {
     } catch (e) { setError(e.message); }
     setLoading(false);
   }, [authFetch, typeFilter, statusFilter]);
-
+ 
   useEffect(() => { load(); }, [load]);
-
+ 
   async function quickPatch(d, body) {
     setActingId(d.id);
     try { await call(authFetch, `/admin/drivers/${d.id}`, 'PATCH', body); await load(); }
     catch (e) { setError(e.message); }
     setActingId(null);
   }
-
+ 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return drivers;
-    return drivers.filter((d) => [d.name, d.phone, d.plateNumber].some((v) => (v || '').toLowerCase().includes(q)));
-  }, [drivers, search]);
-
+    return drivers.filter((d) => {
+      if (kindFilter === 'NONE' ? !needsKind(d) : kindFilter && d.subType !== kindFilter) return false;
+      if (q && ![d.name, d.phone, d.plateNumber, d.area].some((v) => (v || '').toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [drivers, search, kindFilter]);
+ 
+  const missingKind = useMemo(() => drivers.filter(needsKind).length, [drivers]);
+ 
   const columns = [
     {
       key: 'driver', label: 'Driver',
@@ -523,8 +593,22 @@ function DriversTab({ authFetch, theme }) {
     },
     {
       key: 'vehicle', label: 'Vehicle',
-      render: (d) => <div style={{ fontSize: 12 }}><div style={{ fontWeight: 700 }}>{vLabel(d.vehicleType)}</div><div style={{ color: '#9ca3af' }}>{[d.vehicleDescription, d.plateNumber].filter(Boolean).join(' · ') || '—'}</div></div>,
+      render: (d) => (
+        <div style={{ fontSize: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700 }}>{vLabel(d.vehicleType)}</span>
+            {d.subType && <KindPill subType={d.subType} />}
+            {needsKind(d) && (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 50, background: '#fffbeb', color: '#b45309', whiteSpace: 'nowrap' }}>
+                Kind not set
+              </span>
+            )}
+          </div>
+          <div style={{ color: '#9ca3af', marginTop: 2 }}>{[d.vehicleDescription, d.plateNumber].filter(Boolean).join(' · ') || '—'}</div>
+        </div>
+      ),
     },
+    { key: 'area', label: 'Area', render: (d) => <span style={{ color: '#6b7280', fontSize: 12 }}>{d.area || '—'}</span> },
     { key: 'rides', label: 'Rides', render: (d) => <span style={{ fontWeight: 700 }}>{d.totalRides}</span> },
     {
       key: 'avail', label: 'Availability',
@@ -556,19 +640,32 @@ function DriversTab({ authFetch, theme }) {
       ),
     },
   ];
-
+ 
   return (
     <div>
       {error && <div style={{ ...errBox, marginBottom: 12 }}>{error}</div>}
+ 
+      {missingKind > 0 && (
+        <div style={{ padding: '10px 14px', borderRadius: 10, background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', fontSize: 13, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <span>{missingKind} tricycle driver{missingKind === 1 ? '' : 's'} still need a kind (Pragia or Aboboyaa). They only show under “All” in the app.</span>
+          <button onClick={() => setKindFilter('NONE')} style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #fcd34d', background: '#fff', color: '#92400e', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Show them</button>
+        </div>
+      )}
+ 
       <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
           <Search size={13} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-          <input placeholder="Search name, phone or plate..." value={search} onChange={(e) => setSearch(e.target.value)}
+          <input placeholder="Search name, phone, plate or area..." value={search} onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', height: 36, paddingLeft: 32, paddingRight: 10, border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: 12, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
         </div>
         <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={selectCss}>
           <option value="">All vehicles</option>
           {Object.entries(VEHICLES).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+        </select>
+        <select value={kindFilter} onChange={(e) => setKindFilter(e.target.value)} style={selectCss}>
+          <option value="">All kinds</option>
+          {Object.values(SUBTYPES).flat().map((s) => <option key={s.value} value={s.value}>{s.emoji} {s.label}</option>)}
+          <option value="NONE">Kind not set</option>
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={selectCss}>
           <option value="">All statuses</option>
@@ -581,11 +678,11 @@ function DriversTab({ authFetch, theme }) {
           <UserPlus size={13} /> Add driver
         </button>
       </div>
-
+ 
       <div style={{ border: '1px solid #f0f0f0', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
         <Table columns={columns} data={visible} loading={loading} emptyMsg={drivers.length === 0 ? 'No drivers yet. Add your first one' : 'No drivers match your filters'} />
       </div>
-
+ 
       {modal && <DriverModal editing={modal.editing} authFetch={authFetch} theme={theme} onClose={() => setModal(null)} onSaved={load} />}
     </div>
   );
