@@ -271,7 +271,7 @@ export default function AdminTerms({ authFetch, theme }) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>Privacy Policy</div>
                 <textarea style={{ ...input, minHeight: 200, resize: 'vertical', lineHeight: 1.5 }} value={editor.form.privacyContent} onChange={set('privacyContent')} disabled={editor.readOnly} />
               </label>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Plain text. Line breaks are kept; HTML isn't rendered.</div>
+              {/* <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Plain text. Line breaks are kept; HTML isn't rendered.</div> */}
 
               {formError && <div style={{ background: '#fef2f2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginTop: 14 }}>{formError}</div>}
             </div>
