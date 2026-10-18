@@ -43,7 +43,7 @@ import { GlobalSearch } from '../../components/admin/GlobalSearch';
 import AdminResetPassword from './AdminResetPassword';
 import AdminPros from '../../components/admin/Adminpros';
 import AdminRides from '../../components/admin/Adminrides';
-import AdminTerms from '../../components/Admin/AdminTerms';
+import AdminTerms from '../../components/admin/AdminTerms';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -619,7 +619,7 @@ export default function AdminDashboard() {
     rides: <AdminRides authFetch={authFetch} theme={theme}/>,
     terms: <AdminTerms authFetch={authFetch} theme={theme}/>,
   };
-  // Export error
+  // Import error
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', background:'#f8faf8', fontFamily:"'DM Sans', system-ui, sans-serif" }}>
