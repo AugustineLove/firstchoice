@@ -8,7 +8,7 @@ import {
   Smartphone, Pill, XCircle, LayoutDashboard,
   Upload, MapPin, Clock, Copy, Navigation, ExternalLink,
 } from 'lucide-react';
-import { fieldStyle, fmtGHS, StatCard, StatusBadge, Table, } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, StatCard, StatusBadge, Table, } from '../../pages/customer/AdminDashboard';
 
 
 const CLOUDINARY_CLOUD_NAME = import.meta?.env?.VITE_CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME';

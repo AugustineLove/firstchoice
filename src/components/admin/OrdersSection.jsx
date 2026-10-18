@@ -18,8 +18,8 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { fieldStyle, fmtGHS, Pagination, StatCard, Table } from '../../pages/public/AdminDashboard';
-import { StatusBadge } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, Pagination, StatCard, Table } from '../../pages/customer/AdminDashboard';
+import { StatusBadge } from '../../pages/customer/AdminDashboard';
 import { OrderDetailModal } from './OrderDetailModal';
 
 export function OrdersSection({ authFetch, theme }) {

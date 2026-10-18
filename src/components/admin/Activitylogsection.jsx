@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Pagination } from '../../pages/public/AdminDashboard';
+import { Table, Pagination } from '../../pages/customer/AdminDashboard';
 
 const ACTION_STYLES = {
   ORDER_STATUS_CHANGE:     { label: 'Order Status',     color: '#1e40af', bg: '#dbeafe' },

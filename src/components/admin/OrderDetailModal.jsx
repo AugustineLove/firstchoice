@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
   fieldStyle, fmtGHS, Pagination, StatCard, StatusBadge, Table,
-} from '../../pages/public/AdminDashboard';
+} from '../../pages/customer/AdminDashboard';
 
 /* ═══════════════════════════════════════════════
    Shared bits for the order detail modal

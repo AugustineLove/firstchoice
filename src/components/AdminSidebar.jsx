@@ -14,6 +14,9 @@ const NAV = [
   { id: 'analytics',  label: 'Analytics',       icon: '📈', badge: null },
   { id: 'settings',   label: 'Settings',        icon: '⚙️', badge: null },
   { id: 'password', label: 'Reset Password', icon: '🔑', badge: null },
+     { id: 'pros', label: 'Professionals', icon: '🛠️', badge: null },
+     { id: 'rides', label: 'Rides', icon: '🚗', badge: null },
+     
 ]
 
 export default function AdminSidebar({ activeTab, setActiveTab }) {

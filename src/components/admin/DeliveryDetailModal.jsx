@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import {
   fieldStyle, fmtGHS, StatusBadge,
-} from '../../pages/public/AdminDashboard';
+} from '../../pages/customer/AdminDashboard';
 
 /* ═══════════════════════════════════════════════
    Shared bits for the delivery detail modal

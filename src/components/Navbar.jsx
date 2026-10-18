@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: 'Services', href: '#services' },
   { label: 'Partners', href: '#partners' },
   { label: 'About', href: '#about' },
+  // { label: 'Legal', href: '/legal' },
 ];
 
 export default function Navbar() {

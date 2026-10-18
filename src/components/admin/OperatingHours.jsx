@@ -1,6 +1,6 @@
 import { Badge, Loader2, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { fieldStyle } from "../../pages/public/AdminDashboard";
+import { fieldStyle } from "../../pages/customer/AdminDashboard";
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DURATION_OPTIONS = [

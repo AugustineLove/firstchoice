@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Loader2, Eye,
 } from 'lucide-react';
-import { fieldStyle, fmtGHS, Pagination, StatCard, StatusBadge, Table } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, Pagination, StatCard, StatusBadge, Table } from '../../pages/customer/AdminDashboard';
 import { DeliveryDetailModal } from './DeliveryDetailModal';
 
 export function DeliveriesSection({ authFetch, theme }) {

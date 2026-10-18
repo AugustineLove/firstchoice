@@ -1,5 +1,6 @@
 'use client';
 
+import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 
 // ─── PARTNERS ────────────────────────────────────────────────────────────────
@@ -382,9 +383,14 @@ export function Footer() {
             </div>
           ))}
         </div>
+        
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', fontSize: 11, flexWrap: 'wrap', gap: 8 }}>
           <p>© 2024 FirstChoice Logistics Ltd. All rights reserved.</p>
-          <p>Privacy Policy · Terms of Service</p>
+          <p>
+          <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</Link>
+          {' · '}
+          <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</Link>
+        </p>
         </div>
       </div>
       <style>{`@media(max-width:768px){.footer-grid{grid-template-columns:1fr 1fr!important}}`}</style>

@@ -19,7 +19,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { BUSINESS_TYPES, fieldStyle, fmtGHS, FormField, PRODUCT_CATEGORY_EMOJI, StatCard, Table } from '../../pages/public/AdminDashboard';
+import { BUSINESS_TYPES, fieldStyle, fmtGHS, FormField, PRODUCT_CATEGORY_EMOJI, StatCard, Table } from '../../pages/customer/AdminDashboard';
 import { AdminProductModal } from './VendorManageModal'; // export this component (see note below)
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
 

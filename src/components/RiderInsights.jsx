@@ -8,7 +8,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { Table, StatusBadge, StatCard, Pagination } from '../pages/public/AdminDashboard';
+import { Table, StatusBadge, StatCard, Pagination } from '../pages/customer/AdminDashboard';
 // ^ adjust the import path/filename to wherever you exported those primitives from
 
 export const PIE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];

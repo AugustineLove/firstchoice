@@ -18,7 +18,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { fieldStyle, fmtGHS, StatCard, Table } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, StatCard, Table } from '../../pages/customer/AdminDashboard';
 
 
 export function ReportsSection({ authFetch, theme }) {

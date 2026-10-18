@@ -9,7 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import RiderDashboard from './pages/public/RiderDashboard'
 import VendorDashboard from './pages/public/VendorDashboard'
 import RiderOnboarding from './pages/public/RiderOnboarding'
-import AdminDashboard from './pages/public/AdminDashboard'
+import AdminDashboard from './pages/customer/AdminDashboard'
 import VendorOnboarding from './pages/public/VendorOnboarding'
 import ResetPassword from './pages/ResetPassword'
 
@@ -33,6 +33,7 @@ import { useNotifications } from './providers/useNotifications'
 import ProfileEditPage from './pages/customer/Profile/ProfileEditingPage'
 import ForgotPassword from './pages/ForgotPassword'
 import ProductDetailPage from './pages/public/ProductDetailPage'
+import LegalPage from './pages/public/legalPage'
 
 export default function App() {
   const { toast, dismissToast, openToast } = useNotifications();
@@ -55,7 +56,8 @@ export default function App() {
               <Route path="/register/:type" element={<RegisterPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-
+              <Route path="/terms" element={<LegalPage type="terms" />} />
+<Route path="/privacy" element={<LegalPage type="privacy" />} />
               {/* Admin */}
               <Route path="/admin/dashboard" element={
                 <ProtectedRoute roles={['ADMIN']}>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, AlertTriangle, Clock, ShoppingBag, Truck, RefreshCw } from 'lucide-react';
-import { fmtGHS } from '../../pages/public/AdminDashboard';
+import { fmtGHS } from '../../pages/customer/AdminDashboard';
 
 const URGENCY_STYLE = {
   stale: { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', label: 'Waiting 15+ min' },

@@ -13,6 +13,9 @@ import {
   AlertTriangle,
   MapPin,
   Key,
+  User,
+  Car,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -37,7 +40,10 @@ import { NotificationBell } from '../../components/admin/NotificationBell';
 import { ActivityLogSection } from '../../components/admin/Activitylogsection';
 import { LiveRiderMap } from '../../components/admin/LiveRiderMap';
 import { GlobalSearch } from '../../components/admin/GlobalSearch';
-import AdminResetPassword from '../customer/AdminResetPassword';
+import AdminResetPassword from './AdminResetPassword';
+import AdminPros from '../../components/admin/Adminpros';
+import AdminRides from '../../components/admin/Adminrides';
+import AdminTerms from '../../components/Admin/AdminTerms';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -456,8 +462,6 @@ function UsersSection({ authFetch, theme, focusId }) {
   );
 }
 
-/* ── VENDORS ── */
-
 
 /* ── RIDERS ── */
 function RidersSection({ authFetch, theme, focusId }) {
@@ -562,6 +566,9 @@ const NAV_ITEMS = [
   { id: 'activity', label: 'Activity Log', icon: <ClipboardList size={18}/> },
   { id: 'live', label: 'Live Map', icon: <MapPin size={18}/> },
   { id: 'password', label: 'Reset Password', icon: <Key size={18}/> },
+  { id: 'pros', label: 'Pros', icon: <User size={18}/> },
+  { id: 'rides', label: 'Rides', icon: <Car size={18}/> },
+  { id: 'terms', label: 'Terms', icon: <FileText size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -608,6 +615,9 @@ export default function AdminDashboard() {
     activity: <ActivityLogSection authFetch={authFetch} theme={theme}/>,
     live: <LiveRiderMap authFetch={authFetch} theme={theme}/>,
     password: <AdminResetPassword authFetch={authFetch} theme={theme}/>,
+    pros: <AdminPros authFetch={authFetch} theme={theme}/>,
+    rides: <AdminRides authFetch={authFetch} theme={theme}/>,
+    terms: <AdminTerms authFetch={authFetch} theme={theme}/>,
   };
 
   return (

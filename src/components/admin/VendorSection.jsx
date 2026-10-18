@@ -18,7 +18,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { fieldStyle, fmtGHS, Pagination, StatCard, Table, StatusBadge, PRODUCT_CATEGORY_EMOJI } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, Pagination, StatCard, Table, StatusBadge, PRODUCT_CATEGORY_EMOJI } from '../../pages/customer/AdminDashboard';
 import { VendorManageModal } from './VendorManageModal';
 import { VendorFormModal } from './VendorFormModal';
 

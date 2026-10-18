@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fieldStyle, FormField } from "../../pages/public/AdminDashboard";
+import { fieldStyle, FormField } from "../../pages/customer/AdminDashboard";
 import { Loader2 } from "lucide-react";
 
 export function BroadcastSection({ authFetch, theme }) {

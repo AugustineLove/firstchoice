@@ -18,7 +18,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { fieldStyle, fmtGHS, FormField, PricingModeCard, StatCard, Table } from '../../pages/public/AdminDashboard';
+import { fieldStyle, fmtGHS, FormField, PricingModeCard, StatCard, Table } from '../../pages/customer/AdminDashboard';
 import { OperatingHoursCard } from './OperatingHours';
 
 
