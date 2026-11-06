@@ -20,7 +20,6 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { uploadToCloudinary, validateImageFile } from '../../utils/cloudinary';
-import { BroadcastSection } from '../../components/admin/NavComponents';
 import { OperatingHoursCard } from '../../components/admin/OperatingHours';
 import RiderInsights, { ChartTooltip, PIE_COLORS, SectionCard } from '../../components/RiderInsights';
 import {
@@ -44,6 +43,7 @@ import AdminResetPassword from './AdminResetPassword';
 import AdminPros from '../../components/admin/Adminpros';
 import AdminRides from '../../components/admin/Adminrides';
 import AdminTerms from '../../components/admin/AdminTerms';
+import { BroadcastSection } from '../../components/admin/BroadcastSection';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
