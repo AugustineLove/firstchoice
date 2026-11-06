@@ -345,7 +345,7 @@ export function AdminProductModal({ open, onClose, editing, vendorId, authFetch,
       console.log('Saving product for vendor', vendorId, 'editing?', editing?.id);
         const payload = buildPayload();
         const res = editing
-        ? await authFetch(`/products/${editing.id}?userId=${vendorId}`, { method:'PATCH', body: JSON.stringify(payload) })
+        ? await authFetch(`/products/a/${editing.id}?userId=${vendorId}`, { method:'PATCH', body: JSON.stringify(payload) })
         : await authFetch(`/admin/vendors/${vendorId}/products`, { method:'POST', body: JSON.stringify(payload) });
         const json = await res.json();
         if (!json.success) throw new Error(json.message || 'Could not save product');
