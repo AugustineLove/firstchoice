@@ -119,7 +119,7 @@ export function VendorsSection({ authFetch, theme }) {
         {modalTarget && (
 
         modalTarget === 'new' ? (
-          <VendorFormModal
+          <VendorFormModal    
             vendor={null}
             authFetch={authFetch}
             theme={theme}

@@ -16,6 +16,7 @@ import {
   User,
   Car,
   FileText,
+  Smartphone,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -44,6 +45,8 @@ import AdminPros from '../../components/admin/Adminpros';
 import AdminRides from '../../components/admin/Adminrides';
 import AdminTerms from '../../components/admin/AdminTerms';
 import { BroadcastSection } from '../../components/admin/BroadcastSection';
+import AdminAppVersions from '../../components/admin/AdminAppVersions';
+import { DeliveryPricingSection } from '../../components/admin/DeliveryPricingSection';
 /* ═══════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════ */
@@ -563,12 +566,14 @@ const NAV_ITEMS = [
   { id:'reports', label:'Reports', icon:<BarChart2 size={18}/> },
   { id:'settings', label:'Settings', icon:<Settings size={18}/> },
   { id:'broadcast', label:'Broadcast', icon:<Megaphone size={18}/> },
+  { id: 'deliveryprice', label: 'Delivery Pricing', icon: <DollarSign size={18}/> },
   { id: 'activity', label: 'Activity Log', icon: <ClipboardList size={18}/> },
   { id: 'live', label: 'Live Map', icon: <MapPin size={18}/> },
   { id: 'password', label: 'Reset Password', icon: <Key size={18}/> },
   { id: 'pros', label: 'Pros', icon: <User size={18}/> },
   { id: 'rides', label: 'Rides', icon: <Car size={18}/> },
   { id: 'terms', label: 'Terms', icon: <FileText size={18}/> },
+  { id: 'appupdates', label: 'App Updates', icon: <Smartphone size={18}/> },
 ];
 
 export default function AdminDashboard() {
@@ -612,12 +617,14 @@ export default function AdminDashboard() {
     reports: <ReportsSection authFetch={authFetch} theme={theme}/>,
     settings: <SettingsSection authFetch={authFetch} theme={theme}/>,
     broadcast: <BroadcastSection authFetch={authFetch} theme={theme}/>,
+    deliveryprice: <DeliveryPricingSection authFetch={authFetch} theme={theme}/>,
     activity: <ActivityLogSection authFetch={authFetch} theme={theme}/>,
     live: <LiveRiderMap authFetch={authFetch} theme={theme}/>,
     password: <AdminResetPassword authFetch={authFetch} theme={theme}/>,
     pros: <AdminPros authFetch={authFetch} theme={theme}/>,
     rides: <AdminRides authFetch={authFetch} theme={theme}/>,
     terms: <AdminTerms authFetch={authFetch} theme={theme}/>,
+    appupdates: <AdminAppVersions authFetch={authFetch} theme={theme} />
   };
   // Import error
 

@@ -16,6 +16,7 @@ const NAV = [
   { id: 'password', label: 'Reset Password', icon: '🔑', badge: null },
      { id: 'pros', label: 'Professionals', icon: '🛠️', badge: null },
      { id: 'rides', label: 'Rides', icon: '🚗', badge: null },
+     { id: 'appupdates', label: 'App Updates', icon: '⬆️', badge: null },
      
 ]
 

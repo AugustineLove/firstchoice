@@ -214,6 +214,7 @@ function AnnouncementsPanel({ authFetch, theme }) {
   async function save() {
     if (!canSave) return;
     setSaving(true); setError(null); setNotice(null);
+    
     try {
       const res = await authFetch('/announcements/admin', {
         method: 'POST',
@@ -222,8 +223,8 @@ function AnnouncementsPanel({ authFetch, theme }) {
           subtitle: subtitle.trim() || undefined,
           imageUrl: imageUrl || undefined,
           targetType,
-          vendorId: targetType === 'VENDOR' ? vendorId : undefined,
-          productId: targetType === 'PRODUCT' ? productId : undefined,
+          vendorId: vendorId,
+          productId:productId,
           endsAt: endsAt ? new Date(endsAt).toISOString() : undefined,
         }),
       });
