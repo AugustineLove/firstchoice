@@ -69,7 +69,7 @@ export function Orders({ orders, onOpen, act, acting }) {
                                   )}
                   </td>
                   <td style={{ padding: '12px 14px', fontSize: 12 }}>{o.paymentMethod}<div style={{ color: o.paymentStatus === 'PAID' ? '#16a34a' : '#f59e0b', fontWeight: 700 }}>{}</div></td>
-                  <td style={{ padding: '12px 14px', fontWeight: 800, color: '#10b981' }}>{money(o.totalAmount)}</td>
+                  <td style={{ padding: '12px 14px', fontWeight: 800, color: '#10b981' }}>{money(o.subtotal)}</td>
                   <td style={{ padding: '12px 14px' }}><Badge status={o.orderStatus} /></td>
                   <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
                     {FLOW[o.orderStatus] && <button disabled={acting === o.id} style={btn('#16a34a')} onClick={() => act(o.id, FLOW[o.orderStatus][0])}>{acting === o.id ? '…' : FLOW[o.orderStatus][1]}</button>}
