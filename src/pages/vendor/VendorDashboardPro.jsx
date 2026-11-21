@@ -396,7 +396,7 @@ export default function VendorDashboardPro() {
 
       <main style={{ flex: 1, padding: '26px 24px', minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div><h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{titles[section]}</h2><p style={{ margin: '3px 0 0', fontSize: 13, color: '#6b7280' }}>Hello {user.name?.split(' ')[0]} 👋 </p></div>
+          <div><h2 style={{ fontSize: 22, fontWeight: 900, margin: 0, color: '#000000' }}>{titles[section]}</h2></div>
           {/* <button onClick={() => loadAll()} style={btn('#6b7280', true)}><RefreshCw size={12} /> Refresh</button> */}
         </div>
         {loading ? <Loader2 size={28} style={{ animation: 'spin 1s linear infinite' }} /> : <>
