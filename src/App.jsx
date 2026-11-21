@@ -7,7 +7,7 @@ import { AuthProvider } from './context/AuthContext'
 import RegisterPage from './pages/public/RegisterPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import RiderDashboard from './pages/public/RiderDashboard'
-import VendorDashboard from './pages/public/VendorDashboard'
+// import VendorDashboard from './pages/public/VendorDashboard'
 import RiderOnboarding from './pages/public/RiderOnboarding'
 import AdminDashboard from './pages/customer/AdminDashboard'
 import VendorOnboarding from './pages/public/VendorOnboarding'
@@ -34,6 +34,8 @@ import ProfileEditPage from './pages/customer/Profile/ProfileEditingPage'
 import ForgotPassword from './pages/ForgotPassword'
 import ProductDetailPage from './pages/public/ProductDetailPage'
 import LegalPage from './pages/public/legalPage'
+import VendorDashboard from './pages/vendor/VendorDashboard'
+import VendorDashboardPro from './pages/vendor/VendorDashboardPro'
 
 export default function App() {
   const { toast, dismissToast, openToast } = useNotifications();
@@ -73,7 +75,7 @@ export default function App() {
               } />
               <Route path="/vendor/dashboard" element={
                 <ProtectedRoute roles={['VENDOR', 'ADMIN']}>
-                  <VendorDashboard />
+                  <VendorDashboardPro />
                 </ProtectedRoute>
               } />
 
