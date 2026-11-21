@@ -14,7 +14,7 @@ import {
 const ORDER_STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'RIDER_ASSIGNED', 'PICKED_UP', 'ARRIVED', 'DELIVERED'];
 const ALL_STATUSES = [...ORDER_STEPS, 'CANCELLED'];
 
-function InfoCard({ title, icon, children }) {
+export function InfoCard({ title, icon, children }) {
   return (
     <div style={{ border: '1px solid #f0f0f0', borderRadius: 14, padding: 14, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>

@@ -12,18 +12,19 @@ import { Products } from '../../components/vendor/productsSection';
 import { Analytics } from '../../components/vendor/analyticsSection';
 import { Reviews } from '../../components/vendor/reviewSection';
 import { Customers } from '../../components/vendor/customersSection';
+import { Orders } from '../../components/vendor/ordersSection';
 
 /* ───────── CONFIG ───────── */
 // NOTE: your Prisma OrderStatus enum has no PREPARING / READY_FOR_PICKUP yet. Add them (migration)
 // or edit FLOW / STEPS below to match the enum.
-const FLOW = {
+export const FLOW = {
   PENDING:   ['ACCEPTED', 'Accept order'],
   ACCEPTED:  ['PREPARING', 'Start preparing'],
   PREPARING: ['READY_FOR_PICKUP', 'Mark ready for pickup'],
 };
 const ACTIVE = ['PENDING','ACCEPTED','PREPARING','READY_FOR_PICKUP','RIDER_ASSIGNED','PICKED_UP','IN_TRANSIT','ARRIVED'];
 const STEPS  = ['PENDING','ACCEPTED','PREPARING','READY_FOR_PICKUP','RIDER_ASSIGNED','PICKED_UP','DELIVERED'];
-const TABS = [
+export const TABS = [
   { id: 'ALL', label: 'All' },
   { id: 'NEW', label: 'New', match: ['PENDING'] },
   { id: 'ACTIVE', label: 'In progress', match: ACTIVE.filter(s => s !== 'PENDING') },
@@ -165,65 +166,6 @@ function Overview({ vendor, orders, stats, onOpen, act, go }) {
 }
 const btn = (c, ghost) => ({ padding: '6px 14px', borderRadius: 8, border: `1px solid ${c}`, background: ghost ? '#fff' : c, color: ghost ? c : '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' });
 
-/* ───────── ORDERS + DRAWER ───────── */
-function Orders({ orders, onOpen, act, acting }) {
-  const [tab, setTab] = useState('ALL');
-  const [q, setQ] = useState('');
-  const [pay, setPay] = useState('');
-  const counts = Object.fromEntries(TABS.map(t => [t.id, t.match ? orders.filter(o => t.match.includes(o.orderStatus)).length : orders.length]));
-  const list = orders.filter(o => {
-    const t = TABS.find(x => x.id === tab);
-    if (t.match && !t.match.includes(o.orderStatus)) return false;
-    if (pay && o.paymentMethod !== pay) return false;
-    const s = q.toLowerCase();
-    return !s || short(o.id).toLowerCase().includes(s) || o.customer?.name?.toLowerCase().includes(s) || o.customer?.phone?.includes(s);
-  });
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '7px 14px', borderRadius: 50, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', background: tab === t.id ? '#16a34a' : '#f3f4f6', color: tab === t.id ? '#fff' : '#6b7280' }}>
-            {t.label} <span style={{ opacity: 0.8 }}>{counts[t.id]}</span>
-          </button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, top: 13, color: '#9ca3af' }} />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search order ID, customer, phone…" style={{ ...inputS, paddingLeft: 34 }} />
-        </div>
-        <select value={pay} onChange={e => setPay(e.target.value)} style={{ ...inputS, width: 150 }}>
-          <option value="">All payments</option><option value="CASH">Cash</option><option value="MOMO">MoMo</option>
-        </select>
-      </div>
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        {!list.length ? <Empty text="No orders match" /> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead><tr style={{ borderBottom: '2px solid #f3f4f6' }}>
-                {['Order', 'Customer', 'Items', 'Payment', 'Total', 'Status', ''].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: '#6b7280', textTransform: 'uppercase' }}>{h}</th>)}
-              </tr></thead>
-              <tbody>{list.map(o => (
-                <tr key={o.id} onClick={() => onOpen(o)} style={{ borderBottom: '1px solid #f9fafb', cursor: 'pointer' }}>
-                  <td style={{ padding: '12px 14px' }}><div style={{ fontFamily: 'monospace', fontWeight: 700, color: '#6b7280' }}>{short(o.id)}</div><div style={{ fontSize: 11, color: '#9ca3af' }}>{fmt(o.createdAt)}</div></td>
-                  <td style={{ padding: '12px 14px' }}><b>{o.customer?.name}</b><div style={{ fontSize: 12, color: '#9ca3af' }}>{o.customer?.phone}</div></td>
-                  <td style={{ padding: '12px 14px', fontSize: 12 }}>{o.items?.slice(0, 2).map((i, k) => <div key={k}>{i.product?.name} ×{i.quantity}</div>)}{o.items?.length > 2 && <div style={{ color: '#9ca3af' }}>+{o.items.length - 2} more</div>}</td>
-                  <td style={{ padding: '12px 14px', fontSize: 12 }}>{o.paymentMethod}<div style={{ color: o.paymentStatus === 'PAID' ? '#16a34a' : '#f59e0b', fontWeight: 700 }}>{o.paymentStatus}</div></td>
-                  <td style={{ padding: '12px 14px', fontWeight: 800, color: '#10b981' }}>{money(o.totalAmount)}</td>
-                  <td style={{ padding: '12px 14px' }}><Badge status={o.orderStatus} /></td>
-                  <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
-                    {FLOW[o.orderStatus] && <button disabled={acting === o.id} style={btn('#16a34a')} onClick={() => act(o.id, FLOW[o.orderStatus][0])}>{acting === o.id ? '…' : FLOW[o.orderStatus][1]}</button>}
-                  </td>
-                </tr>))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Row({ k, v }) {
   return v ? <div style={{ display: 'flex', gap: 10, padding: '4px 0', fontSize: 13 }}><span style={{ width: 96, color: '#9ca3af', flexShrink: 0 }}>{k}</span><span style={{ fontWeight: 600, color: '#0f1117', wordBreak: 'break-word' }}>{v}</span></div> : null;
 }
@@ -283,7 +225,7 @@ function Drawer({ order: o, onClose, act, acting }) {
 
         <div style={sec}>
           <h3 style={h3}>Payment</h3>
-          <Row k="Method" v={o.paymentMethod} /><Row k="Status" v={o.paymentStatus} />
+          <Row k="Method" v={o.paymentMethod} /><Row k="Status" v={o.orderStatus === 'DELIVERED'? 'PAID' : o.paymentStatus} />
           <div style={{ borderTop: '1px dashed #e5e7eb', margin: '8px 0' }} />
           <Row k="Subtotal" v={money(o.subtotal)} />
           <Row k="Delivery fee" v={money(o.deliveryFee)} />
@@ -434,6 +376,7 @@ export default function VendorDashboardPro() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8faf8', fontFamily: "'DM Sans',system-ui,sans-serif" }}>
       <aside style={{ width: side ? 230 : 64, background: '#fff', borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', transition: 'width .25s', position: 'sticky', top: 0, height: '100vh', overflow: 'hidden', flexShrink: 0, zIndex: 100 }}>
         <div style={{ padding: 16, borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
           {side && <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
             <div style={{ width: 34, height: 34, borderRadius: 10, background: green, color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{vendor?.businessName?.[0]?.toUpperCase() || 'V'}</div>
             <div style={{ minWidth: 0 }}><div style={{ fontWeight: 900, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{vendor?.businessName || 'Vendor'}</div>{vendor && <Badge status={vendor.status} />}</div>
