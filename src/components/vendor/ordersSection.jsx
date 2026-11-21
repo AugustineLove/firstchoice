@@ -5,7 +5,7 @@ import { CATEGORIES } from "../../pages/vendor/VendorDashboard";
 import { ProductModal } from "./productModal";
 import { StatusBadge } from "../../pages/customer/AdminDashboard";
 import { FLOW, TABS } from "../../pages/vendor/VendorDashboardPro";
-import { Badge, btn, card, fmt, inputS, money, short } from "./ui";
+import { Badge, btn, card, Empty, fmt, inputS, money, short } from "./ui";
 import { InfoCard } from "../admin/OrderDetailModal";
 
 
