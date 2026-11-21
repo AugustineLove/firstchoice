@@ -230,7 +230,7 @@ function Drawer({ order: o, onClose, act, acting }) {
           <Row k="Subtotal" v={money(o.subtotal)} />
           <Row k="Delivery fee" v={money(o.deliveryFee)} />
           {o.deliveryDiscount > 0 && <Row k="Discount" v={`- ${money(o.deliveryDiscount)}`} />}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 900, marginTop: 6 }}><span>Total</span><span style={{ color: '#16a34a' }}>{money(o.totalAmount)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 900, marginTop: 6 }}><span>Total</span><span style={{ color: '#16a34a' }}>{money(o.subtotal + o.deliveryFee)}</span></div>
         </div>
 
         {FLOW[o.orderStatus] && <button disabled={acting === o.id} onClick={() => act(o.id, FLOW[o.orderStatus][0])} style={{ ...btn('#16a34a'), width: '100%', padding: 12, fontSize: 14 }}>{acting === o.id ? 'Updating…' : FLOW[o.orderStatus][1]}</button>}
